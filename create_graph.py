@@ -6,11 +6,16 @@
 
 """
 # Import the requirements modules
-from rdflib import Literal, Namespace, URIRef, BNode
+from rdflib import Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SDO, ORG, SKOS, OWL
 from rdflib import Graph
 import pandas as pd
 from abc import ABC
+from gqlalchemy import Memgraph, Node, Relationship, match
+from gqlalchemy.query_builders.memgraph_query_builder import Operator
+from typing import Optional
+from csv import DictReader
+from os.path import join
 
 
 CCG = Namespace("http://127.0.0.1:5001/")
@@ -229,6 +234,201 @@ class GraphRDF(GraphAbstract):
 
         df.apply(add_authorship_relation, axis=1)
 
+
+class Author(Node):
+    uuid: str
+    orcid: Optional[str]
+    last_name: Optional[str]
+    first_name: Optional[str]
+
+
+class Output(Node):
+    uuid: str
+
+
+class Article(Output):
+    doi: Optional[str]
+    title: Optional[str]
+    abstract: Optional[str]
+
+
+class Unit(Node):
+    id: str
+    name: Optional[str]
+
+
+class Workstream(Unit):
+    pass
+
+
+class Partner(Unit):
+    dbpedia: Optional[str]
+
+
+class member_of(Relationship):
+    pass
+
+
+class unit_of(Relationship):
+    pass
+
+
+class author_of(Relationship):
+    pass
+
+
+class GraphMemGraph(GraphAbstract):
+
+    def __init__(self) -> None:
+
+        self.g = Memgraph(host='127.0.0.1', port=7687)
+        self.g.drop_database()
+
+        self.authors = {}
+        self.outputs = {}
+        self.work_streams = {}
+        self.partners = {}
+
+    def add_authors(self, df):
+
+        def add_author(row):
+            if pd.isna(row['Orcid']):
+                self.authors[row['uuid']] = Author(uuid=row['uuid'],
+                                                   first_name=row['First Name'],
+                                                   last_name=row['Last Name']).save(self.g)
+            else:
+                self.authors[row['uuid']] = Author(uuid=row['uuid'],
+                                                   first_name=row['First Name'],
+                                                   last_name=row['Last Name'],
+                                                   orcid=row['Orcid']).save(self.g)
+        df.apply(add_author, axis=1)
+
+    def add_papers(self, df):
+
+        def add_paper(row):
+            self.outputs[row['paper_uuid']] = Article(uuid=row['paper_uuid'],
+                                                      doi=row['DOI'],
+                                                      title=row['title'],
+                                                      abstract=row['Abstract']).save(self.g)
+        df.apply(add_paper, axis=1)
+
+    def add_authorship_relation(self, df):
+
+        def add_authorship(row):
+            author_uuid = row['uuid']
+            paper_uuid = row['paper_uuid']
+
+            loaded_author = Author(uuid=author_uuid).load(db=self.g)
+            loaded_output = Article(uuid=paper_uuid).load(db=self.g)
+
+            author_of(_start_node_id=loaded_author._id, _end_node_id=loaded_output._id).save(self.g)
+
+        df.apply(add_authorship, axis=1)
+
+    def add_work_streams(self, df):
+        """Add work_streams to the graph
+        """
+        def add_work_stream(row):
+            self.work_streams[row['id']] = Workstream(id=row['id'],
+                                                      name=row['name']
+                                                      ).save(self.g)
+
+        df.apply(add_work_stream, axis=1)
+
+    def add_sub_work_streams(self, df):
+        """Add subwork_streams to the graph
+        """
+        def add_ws_structure(row):
+            """Add workstream structure to graph
+            """
+            parent = Workstream(id=row['parent']).load(self.g)
+            child = Workstream(id=row['child']).load(self.g)
+
+            unit_of(_start_node_id=child._id,
+                      _end_node_id=parent._id
+                      ).save(self.g)
+
+        df.apply(add_ws_structure, axis=1)
+
+    def add_work_package_members(self, df):
+        """Add work package members
+        """
+        def add_work_package_member(row):
+            """Adds work package members
+
+            """
+            ws = Workstream(id=row['id']).load(self.g)
+
+            if pd.isna(row['orcid']):
+                results = None
+            else:
+                results = list(
+                            match()
+                            .node(labels="Author", variable="a")
+                            .where(item="a.orcid", operator=Operator.EQUAL, literal=row['orcid'])
+                            .return_([("a.uuid", 'uuid')])
+                            .execute()
+                            )
+
+            if results:
+                author = Author(uuid=results[0]['uuid']).load(self.g)
+                member_of(_start_node_id=author._id,
+                          _end_node_id=ws._id
+                          ).save(self.g)
+            else:
+                print(f"Could not find {row['name']} in the database")
+
+        df.apply(add_work_package_member, axis=1)
+
+    def add_partners(self, df):
+
+        def add_partner(row):
+            """Adds consortium partner
+
+            """
+            self.partners[row['id']] = Partner(id=row['id'],
+                              name=row['name'],
+                              dbpedia=row['dbpedia']
+                              ).save(self.g)
+
+        df.apply(add_partner, axis=1)
+
+    def add_affiliations(self, df):
+        """Adds affiliations
+        """
+        def add_affiliation(row):
+            """Adds affiliations
+
+            Notes
+            -----
+            Relationship between a consortium partner and an author
+            """
+            partner = Partner(id=row['id']).load(self.g)
+            results = None
+            if pd.isna(row['orcid']):
+                results = list(
+                            match()
+                            .node(labels="Author", variable="a")
+                            .where(item="a.first_name + ' ' + a.last_name", operator=Operator.EQUAL, literal=row['name'])
+                            .return_(results=[("a.uuid", "uuid")])
+                            .execute()
+                            )
+            else:
+                results = list(
+                            match()
+                            .node(labels="Author", variable="a")
+                            .where(item="a.orcid", operator=Operator.EQUAL, literal=row['orcid'])
+                            .return_(results=[("a.uuid", "uuid")])
+                            .execute()
+                            )
+            if results:
+                author = Author(uuid=results[0]['uuid']).load(self.g)
+                member_of(_start_node_id=author._id,
+                          _end_node_id=partner._id
+                          ).save(self.g)
+        df.apply(add_affiliation, axis=1)
+
+
 def main(graph: GraphAbstract):
     """Create the graph of authors and papers
 
@@ -239,23 +439,24 @@ def main(graph: GraphAbstract):
     structure = pd.read_excel('project_partners.xlsx', sheet_name='subws')
     graph.add_sub_work_streams(structure)
 
-    work_package_members = pd.read_excel('project_partners.xlsx', sheet_name='wp_members')
-    graph.add_work_package_members(work_package_members)
-
     df = pd.read_excel('project_partners.xlsx', sheet_name='partners')
     graph.add_partners(df)
 
-    df = pd.read_excel('project_partners.xlsx', sheet_name='org_members')
-    graph.add_affiliations(df)
 
     authors = pd.read_csv('data/authors.csv')
     graph.add_authors(authors)
+
+    work_package_members = pd.read_excel('project_partners.xlsx', sheet_name='wp_members')
+    graph.add_work_package_members(work_package_members)
 
     papers = pd.read_csv('data/papers.csv')
     graph.add_papers(papers)
 
     relations = pd.read_csv('data/relations.csv')
     graph.add_authorship_relation(relations)
+
+    df = pd.read_excel('project_partners.xlsx', sheet_name='org_members')
+    graph.add_affiliations(df)
 
     return graph.g
 
@@ -264,3 +465,6 @@ if __name__ == "__main__":
     graph = GraphRDF()
     g = main(graph)
     g.serialize('authors.ttl')
+
+    memgraph = GraphMemGraph()
+    g = main(memgraph)
