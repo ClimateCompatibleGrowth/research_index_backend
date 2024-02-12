@@ -14,14 +14,13 @@ from abc import ABC
 from gqlalchemy import Memgraph, Node, Relationship, match
 from gqlalchemy.query_builders.memgraph_query_builder import Operator
 from typing import Optional
-from csv import DictReader
-from os.path import join
+from os import environ
 
 
 CCG = Namespace("http://127.0.0.1:5001/")
 DOI = Namespace("http://doi.org/")
 DBR = Namespace("http://dbpedia.org/resource/")
-
+DBP = Namespace("http://dbpedia.org/")
 
 class GraphAbstract(ABC):
 
@@ -72,6 +71,11 @@ class GraphAbstract(ABC):
         """
         raise NotImplementedError()
 
+    def add_countries(self, df):
+        """Add countries
+
+        """
+        raise NotImplementedError()
 
 class GraphRDF(GraphAbstract):
 
@@ -83,12 +87,18 @@ class GraphRDF(GraphAbstract):
         self.g.bind('owl', OWL)
         self.g.bind('skos', SKOS)
         self.g.bind('org', ORG)
+        self.g.bind('dbp', DBP)
         PROJECT = URIRef(CCG)
         self.g.add((PROJECT, RDF.type, ORG.OrganizationalCollaboration))
         self.g.add((PROJECT, SKOS.prefLabel, Literal("Climate Compatible Growth")))
         for oa in ['oa1', 'oa2', 'oa3']:
             self.g.add((PROJECT, ORG.hasUnit, CCG[f"unit/{oa}"]))
             self.g.add((CCG[f"unit/{oa}"], ORG.unitOf, PROJECT))
+
+    def add_countries(self, df):
+        def add_country(row):
+            self.g.add((DBR[row['dbpedia']], RDF.type, DBP.Country))
+        df.apply(add_country, axis=1)
 
     def add_work_streams(self, df) -> None:
         """Add work_streams to the graph
@@ -234,6 +244,8 @@ class GraphRDF(GraphAbstract):
 
         df.apply(add_authorship_relation, axis=1)
 
+    def add_country_relations(self):
+        pass
 
 class Author(Node):
     uuid: str
@@ -250,6 +262,12 @@ class Article(Output):
     doi: Optional[str]
     title: Optional[str]
     abstract: Optional[str]
+
+
+class Country(Node):
+    id: str
+    name: str
+    dbpedia: Optional[str]
 
 
 class Unit(Node):
@@ -277,17 +295,22 @@ class author_of(Relationship):
     pass
 
 
+class refers_to(Relationship):
+    pass
+
+
 class GraphMemGraph(GraphAbstract):
 
-    def __init__(self) -> None:
+    def __init__(self, MG_HOST, MG_PORT) -> None:
 
-        self.g = Memgraph(host='127.0.0.1', port=7687)
+        self.g = Memgraph(host=MG_HOST, port=MG_PORT)
         self.g.drop_database()
 
         self.authors = {}
         self.outputs = {}
         self.work_streams = {}
         self.partners = {}
+        self.countries = {}
 
     def add_authors(self, df):
 
@@ -302,6 +325,17 @@ class GraphMemGraph(GraphAbstract):
                                                    last_name=row['Last Name'],
                                                    orcid=row['Orcid']).save(self.g)
         df.apply(add_author, axis=1)
+
+    def add_countries(self, df):
+
+        def add_country(row):
+            print(f"Adding Country: {row['name']} to the database")
+            country = Country(id=row['name'],
+                              name=row['name'],
+                              dbpedia=row['dbpedia'])
+            self.countries[row['name']] = country.save(self.g)
+
+        df.apply(add_country, axis=1)
 
     def add_papers(self, df):
 
@@ -428,6 +462,20 @@ class GraphMemGraph(GraphAbstract):
                           ).save(self.g)
         df.apply(add_affiliation, axis=1)
 
+    def add_country_relations(self):
+        query = """
+            MATCH (c:Country)
+            CALL {
+            WITH c
+            MATCH (o:Output)
+            WHERE o.abstract CONTAINS c.name AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
+            CREATE (o)-[r:REFERS_TO]->(c)
+            RETURN r
+            }
+            RETURN r
+            """
+        self.g.execute(query)
+
 
 def main(graph: GraphAbstract):
     """Create the graph of authors and papers
@@ -441,7 +489,6 @@ def main(graph: GraphAbstract):
 
     df = pd.read_excel('project_partners.xlsx', sheet_name='partners')
     graph.add_partners(df)
-
 
     authors = pd.read_csv('data/authors.csv')
     graph.add_authors(authors)
@@ -458,6 +505,12 @@ def main(graph: GraphAbstract):
     df = pd.read_excel('project_partners.xlsx', sheet_name='org_members')
     graph.add_affiliations(df)
 
+    df = pd.read_excel('project_partners.xlsx', sheet_name='countries')
+    graph.add_countries(df)
+
+    graph.add_country_relations()
+
+
     return graph.g
 
 
@@ -466,5 +519,10 @@ if __name__ == "__main__":
     g = main(graph)
     g.serialize('authors.ttl')
 
-    memgraph = GraphMemGraph()
+    MG_HOST = environ.get("MG_HOST", "127.0.0.1")
+    MG_PORT = int(environ.get("MG_PORT", 7687))
+
+    print(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
+
+    memgraph = GraphMemGraph(MG_HOST, MG_PORT)
     g = main(memgraph)
