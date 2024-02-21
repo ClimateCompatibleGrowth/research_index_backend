@@ -97,7 +97,10 @@ class GraphRDF(GraphAbstract):
 
     def add_countries(self, df):
         def add_country(row):
-            self.g.add((DBR[row['dbpedia']], RDF.type, DBP.Country))
+            words = str(row['name']).split(" ")
+            dbpedia = "_".join(words)
+            print(dbpedia)
+            self.g.add((DBR[dbpedia], RDF.type, DBP.Country))
         df.apply(add_country, axis=1)
 
     def add_work_streams(self, df) -> None:
@@ -268,6 +271,8 @@ class Country(Node):
     id: str
     name: str
     dbpedia: Optional[str]
+    latitude: Optional[float]
+    longitude: Optional[float]
 
 
 class Unit(Node):
@@ -330,9 +335,12 @@ class GraphMemGraph(GraphAbstract):
 
         def add_country(row):
             print(f"Adding Country: {row['name']} to the database")
-            country = Country(id=row['name'],
+            dbpedia = "_".join(row['name'].split(" "))
+            country = Country(id=row['country'],
                               name=row['name'],
-                              dbpedia=row['dbpedia'])
+                              latitude=row['latitude'],
+                              longitude=row['longitude'],
+                              dbpedia=dbpedia)
             self.countries[row['name']] = country.save(self.g)
 
         df.apply(add_country, axis=1)
@@ -505,7 +513,7 @@ def main(graph: GraphAbstract):
     df = pd.read_excel('project_partners.xlsx', sheet_name='org_members')
     graph.add_affiliations(df)
 
-    df = pd.read_excel('project_partners.xlsx', sheet_name='countries')
+    df = pd.read_csv('data/countries.csv', quotechar='"')
     graph.add_countries(df)
 
     graph.add_country_relations()
