@@ -14,7 +14,6 @@ import requests
 from typing import List, Dict
 from logging import getLogger, basicConfig, DEBUG
 from os import environ
-from html import unescape
 from gqlalchemy import Memgraph, Node, Relationship, match
 from typing import Optional
 from gqlalchemy.query_builders.memgraph_query_builder import Operator
@@ -22,7 +21,10 @@ from uuid import uuid4
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from json import dump
-from unicodedata import normalize
+from sys import argv
+
+from . parser import parse_metadata
+from . models import Article, ArticleMetadata, Author, AuthorMetadata, author_of
 
 
 logger = getLogger(__name__)
@@ -32,66 +34,6 @@ TOKEN = environ.get('TOKEN')
 
 # Use regex pattern from https://www.crossref.org/blog/dois-and-matching-regular-expressions/
 PATTERN = compile("10.\d{4,9}\/[-._;()\/:A-Z0-9]+", IGNORECASE)
-CLEANR = compile('<.*?>')
-
-
-@dataclass
-class AuthorMetadata():
-    orcid: Optional[str]
-    last_name: str
-    first_name: str
-    rank: int
-
-
-@dataclass
-class ArticleMetadata():
-    doi: Optional[str]
-    title: Optional[str]
-    abstract: Optional[str]
-    authors: List[AuthorMetadata]
-    journal: Optional[str]
-    issue: Optional[int]
-    volume: Optional[int]
-    publication_year: Optional[int]
-    publication_month: Optional[int]
-    publication_day: Optional[int]
-    publisher: Optional[str]
-
-
-class Author(Node):
-    uuid: str
-    first_name: Optional[str]
-    last_name: Optional[str]
-    orcid: Optional[str]
-
-
-class Output(Node):
-    uuid: str
-
-
-class Article(Output):
-    uuid: Optional[str]
-    doi: Optional[str]
-    title: Optional[str]
-    abstract: Optional[str]
-    journal: Optional[str]
-    issue: Optional[int]
-    volume: Optional[int]
-    publication_year: Optional[int]
-    publication_month: Optional[int]
-    publication_day: Optional[int]
-    publisher: Optional[str]
-
-
-class author_of(Relationship):
-    rank: int
-
-
-def clean_html(raw_html):
-    """Remove HTML markup from a string and normalize UTF8
-    """
-    cleantext = sub(CLEANR, '', raw_html)
-    return unescape(normalize('NFKC', cleantext))
 
 
 def validate_dois(list_of_dois: List) -> Dict[str, List]:
@@ -133,97 +75,6 @@ def get_output_metadata(doi: str):
         dump(response.json(), json_file)
     return response.json()
 
-
-def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
-    """Parses the response from the OpenAire Graph API
-
-    Notes
-    -----
-    For now, this assumes all outputs are journal papers
-    """
-    logger.info(metadata.keys())
-    for result in metadata['response']['results']['result']:
-
-        entity = result['metadata']['oaf:entity']['oaf:result']
-
-        title_meta = entity['title']
-        if isinstance(title_meta, list):
-            count = 0
-            for x in title_meta:
-                count += 1
-                print(f"{count}: {x}")
-                if x['@classid'] == 'main title':
-                    title = (x['$'])
-                    break
-                else:
-                    pass
-        else:
-            title = title_meta['$']
-
-        authors = entity.get('creator', None)
-
-        publisher = entity.get('publisher', None)
-        if publisher:
-            publisher = publisher['$']
-        else:
-            publisher = None
-
-        journal = entity.get('journal', None)
-        if journal:
-            journal = journal['$']
-        else:
-            journal = None
-
-        abstract = entity.get('description', None)
-        if abstract:
-            if isinstance(abstract, list):
-                abstract = abstract[0]
-            if '$' in abstract.keys():
-                abstract = clean_html(abstract['$'])
-
-        try:
-            all_authors: List[Author] = []
-            if isinstance(authors, list):
-                for x in authors:
-                    orcid = x.get('@orcid', None)
-                    if not orcid:
-                        orcid = x.get('@orcid_pending', None)
-                    first_name = x.get('@name', "")
-                    last_name = x.get('@surname', "")
-                    if not first_name and not last_name:
-                        name = x.get('$').split()
-                        first_name = name[0]
-                        last_name = name[1]
-                    rank = x.get('@rank', 1)
-                    logger.info(f"Creating author metadata: {first_name} {last_name} {orcid} {rank}")
-                    author = AuthorMetadata(orcid, last_name, first_name, rank)
-                    all_authors.append(author)
-            else:
-                orcid = authors.get('@orcid', None)
-                if not orcid:
-                    orcid = authors.get('@orcid_pending', None)
-                first_name = authors.get('@name', "")
-                last_name = authors.get('@surname', "")
-                rank = authors.get('@rank', 0)
-                logger.info(f"Creating author metadata: {first_name} {last_name} {orcid} {rank}")
-                author = AuthorMetadata(orcid, last_name, first_name, rank)
-                all_authors.append(author)
-
-        except TypeError as ex:
-            print(authors['$'])
-            raise TypeError(ex)
-
-        doi = valid_doi
-        issue = None
-        volume = None
-        publication_year = None
-        publication_month = None
-        publication_day = None
-
-        return ArticleMetadata(doi, title, abstract,
-                               all_authors, journal, issue, volume,
-                               publication_year, publication_month,
-                               publication_day, publisher)
 
 
 def check_upload_author(author: Dict, graph: Memgraph) -> Author:
@@ -356,6 +207,28 @@ def main(list_of_dois, graph):
             logger.info("Upload failed")
 
     return True
+
+
+def entry_point():
+
+    if len(argv[1:]) == 1:
+        file_path = argv[1]
+    else:
+        raise ValueError("No file path provided to the list of dois.")
+
+    list_of_dois = []
+    with open(file_path, 'r') as csv_file:
+        for line in csv_file:
+            list_of_dois.append(line.strip())
+
+    MG_HOST = environ.get("MG_HOST", "127.0.0.1")
+    MG_PORT = int(environ.get("MG_PORT", 7687))
+
+    logger.info(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
+    graph = Memgraph(host=MG_HOST, port=MG_PORT)
+    graph.drop_database()
+
+    result = main(list_of_dois, graph)
 
 
 if __name__ == "__main__":

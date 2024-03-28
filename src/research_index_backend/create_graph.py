@@ -22,6 +22,7 @@ DOI = Namespace("http://doi.org/")
 DBR = Namespace("http://dbpedia.org/resource/")
 DBP = Namespace("http://dbpedia.org/")
 
+
 class GraphAbstract(ABC):
 
     def add_work_streams(self, df):
@@ -76,6 +77,7 @@ class GraphAbstract(ABC):
 
         """
         raise NotImplementedError()
+
 
 class GraphRDF(GraphAbstract):
 
@@ -323,12 +325,14 @@ class GraphMemGraph(GraphAbstract):
             if pd.isna(row['Orcid']):
                 self.authors[row['uuid']] = Author(uuid=row['uuid'],
                                                    first_name=row['First Name'],
-                                                   last_name=row['Last Name']).save(self.g)
+                                                   last_name=row['Last Name']
+                                                   ).save(self.g)
             else:
                 self.authors[row['uuid']] = Author(uuid=row['uuid'],
                                                    first_name=row['First Name'],
                                                    last_name=row['Last Name'],
-                                                   orcid=row['Orcid']).save(self.g)
+                                                   orcid=row['Orcid']
+                                                   ).save(self.g)
         df.apply(add_author, axis=1)
 
     def add_countries(self, df):
@@ -402,7 +406,13 @@ class GraphMemGraph(GraphAbstract):
             ws = Workstream(id=row['id']).load(self.g)
 
             if pd.isna(row['orcid']):
-                results = None
+                results = list(
+                            match()
+                            .node(labels="Author", variable="a")
+                            .where(item="a.first_name + ' ' + a.last_name", operator=Operator.EQUAL, literal=row['name'])
+                            .return_(results=[("a.uuid", "uuid")])
+                            .execute()
+                            )
             else:
                 results = list(
                             match()
