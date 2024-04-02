@@ -1,6 +1,17 @@
 from gqlalchemy import Node, Relationship
 from typing import Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from enum import Enum
+
+
+class ResultType(Enum):
+    PUBLICATION = 0
+    DATASET = 1
+    SOFTWARE = 2
+    OTHER = 3
+
+    def __str__(self):
+        str(self).title()
 
 
 @dataclass
@@ -24,6 +35,8 @@ class ArticleMetadata():
     publication_month: Optional[int]
     publication_day: Optional[int]
     publisher: Optional[str]
+    result_type: Optional[str]
+    resource_type: Optional[str]
 
 
 class Author(Node):
@@ -49,6 +62,7 @@ class Article(Output):
     publication_month: Optional[int]
     publication_day: Optional[int]
     publisher: Optional[str]
+    result_type: Optional[str]
 
 
 class author_of(Relationship):

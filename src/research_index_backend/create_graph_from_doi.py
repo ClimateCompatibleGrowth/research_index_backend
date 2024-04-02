@@ -24,7 +24,7 @@ from json import dump
 from sys import argv
 
 from . parser import parse_metadata
-from . models import Article, ArticleMetadata, Author, AuthorMetadata, author_of
+from . models import Article, ArticleMetadata, Author, author_of
 
 
 logger = getLogger(__name__)
@@ -113,7 +113,7 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
                     )
 
     if results:
-        logger.info("Author {} {} exists")
+        logger.info(f"Author {author['first_name']} {author['last_name']} exists")
         author_node = Author(uuid=results[0]['uuid']).load(graph)
     else:
         # Create author node

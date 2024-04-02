@@ -1,0 +1,131 @@
+{
+    "creator": [
+        {
+            "@rank": "1",
+            "@name": "Lucy",
+            "@surname": "Allington",
+            "@orcid_pending": "0000-0003-1801-899x",
+            "$": "Allington, Lucy"
+        },
+        {
+            "@rank": "2",
+            "@name": "Carla",
+            "@surname": "Cannone",
+            "@orcid_pending": "0000-0002-1214-8913",
+            "$": "Cannone, Carla"
+        },
+        {
+            "@rank": "3",
+            "@name": "Ioannis",
+            "@surname": "Pappis",
+            "@orcid_pending": "0000-0001-7537-5470",
+            "$": "Pappis, Ioannis"
+        },
+        {
+            "@rank": "4",
+            "@name": "Karla",
+            "@surname": "Cervantes Barron",
+            "@orcid_pending": "0000-0001-9185-3022",
+            "$": "Cervantes Barron, Karla"
+        },
+        {
+            "@rank": "5",
+            "@name": "Will",
+            "@surname": "Usher",
+            "@orcid_pending": "0000-0001-9367-1791",
+            "$": "Usher, Will"
+        },
+        {
+            "@rank": "6",
+            "@name": "Steve",
+            "@surname": "Pye",
+            "@orcid_pending": "0000-0003-1793-2552",
+            "$": "Pye, Steve"
+        },
+        {
+            "@rank": "7",
+            "@name": "Mark",
+            "@surname": "Howells",
+            "@orcid_pending": "0000-0001-6419-4957",
+            "$": "Howells, Mark"
+        },
+        {
+            "@rank": "8",
+            "@name": "Constantinos",
+            "@surname": "Taliotis",
+            "@orcid": "0000-0003-4022-5506",
+            "$": "Taliotis, Constantinos"
+        },
+        {
+            "@rank": "9",
+            "@name": "Caroline",
+            "@surname": "Sundin",
+            "$": "Sundin, Caroline"
+        },
+        {
+            "@rank": "10",
+            "@name": "Vignesh",
+            "@surname": "Sridharan",
+            "@orcid_pending": "0000-0003-0764-2615",
+            "$": "Sridharan, Vignesh"
+        },
+        {
+            "@rank": "11",
+            "@name": "Eunice",
+            "@surname": "Ramos",
+            "@orcid_pending": "0000-0001-9061-8485",
+            "$": "Ramos, Eunice"
+        },
+        {
+            "@rank": "12",
+            "@name": "Maarten",
+            "@surname": "Brinkerink",
+            "@orcid_pending": "0000-0002-8980-9062",
+            "$": "Brinkerink, Maarten"
+        },
+        {
+            "@rank": "13",
+            "@name": "Paul",
+            "@surname": "Deane",
+            "@orcid_pending": "0000-0002-4681-7791",
+            "$": "Deane, Paul"
+        },
+        {
+            "@rank": "14",
+            "@name": "Andrii",
+            "@surname": "Gritsevskyi",
+            "$": "Gritsevskyi, Andrii"
+        },
+        {
+            "@rank": "15",
+            "@name": "Gustavo",
+            "@surname": "Moura",
+            "$": "Moura, Gustavo"
+        },
+        {
+            "@rank": "16",
+            "@name": "Arnaud",
+            "@surname": "Rouget",
+            "$": "Rouget, Arnaud"
+        },
+        {
+            "@rank": "17",
+            "@name": "David",
+            "@surname": "Wogan",
+            "$": "Wogan, David"
+        },
+        {
+            "@rank": "18",
+            "@name": "Edito",
+            "@surname": "Barcelona",
+            "$": "Barcelona, Edito"
+        },
+        {
+            "@rank": "19",
+            "@name": "Holger",
+            "@surname": "Rogner",
+            "@orcid_pending": "0000-0002-1045-9830",
+            "$": "Rogner, Holger"
+        }
+    ]
+}

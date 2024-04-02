@@ -1,6 +1,7 @@
 from re import compile, sub, IGNORECASE
 from html import unescape
 from unicodedata import normalize
+from codecs import decode
 
 CLEANR = compile('<.*?>')
 
