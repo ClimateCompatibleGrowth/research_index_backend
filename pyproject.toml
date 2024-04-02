@@ -2,12 +2,12 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "research-index-backend"
+name = "research_index_backend"
 dynamic = ["version"]
 description = 'A data cleaning and ingest tool for the CCG Research Index'
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.8"
-license = "MIT"
+license = {file = "LICENSE.txt"}
 keywords = []
 authors = [
   { name = "Will Usher", email = "wusher@kth.se" },
@@ -32,6 +32,9 @@ Source = "https://github.com/climateCompatibleGrowth/research-index-backend"
 
 [tool.hatch.version]
 source = "vcs"
+
+[project.scripts]
+research_index = "research_index_backend:entry_point"
 
 [tool.hatch.envs.default]
 dependencies = [
