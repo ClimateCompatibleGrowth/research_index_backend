@@ -8,5 +8,5 @@ CLEANR = compile('<.*?>')
 def clean_html(raw_html):
     """Remove HTML markup from a string and normalize UTF8
     """
-    cleantext = sub(CLEANR, '', raw_html)
+    cleantext = sub(CLEANR, '', raw_html).replace("\xa0", " ")
     return unescape(normalize('NFC', cleantext))

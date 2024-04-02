@@ -4,16 +4,6 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 
 
-class ResultType(Enum):
-    PUBLICATION = 0
-    DATASET = 1
-    SOFTWARE = 2
-    OTHER = 3
-
-    def __str__(self):
-        str(self).title()
-
-
 @dataclass
 class AuthorMetadata():
     orcid: Optional[str]

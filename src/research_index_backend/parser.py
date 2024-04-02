@@ -6,7 +6,7 @@ from re import split
 
 
 from .utils import clean_html
-from .models import ArticleMetadata, AuthorMetadata, ResultType
+from .models import ArticleMetadata, AuthorMetadata
 
 logger = getLogger(__name__)
 
@@ -35,6 +35,8 @@ def parse_author(metadata: str) -> AuthorMetadata:
     if last_name and not first_name:
         last_name = clean_html(last_name)
         names = last_name.split(u"\u202f")
+        if len(names) == 1:
+            names = last_name.split(" ")
         if len(names) == 2:
             first_name = names[0]
             last_name = names[1]
@@ -69,6 +71,7 @@ def parse_result_type(metadata: str) -> str:
 
     return result_type
 
+
 def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
     """Parses the response from the OpenAire Graph API
 
@@ -76,7 +79,6 @@ def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
     -----
     For now, this assumes all outputs are journal papers
     """
-    logger.info(metadata.keys())
     for result in metadata['response']['results']['result']:
 
         entity = result['metadata']['oaf:entity']['oaf:result']
@@ -94,6 +96,7 @@ def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
                     pass
         else:
             title = title_meta['$']
+        logger.info(f"Parsing output {title}")
 
         publisher = entity.get('publisher', None)
         if publisher:

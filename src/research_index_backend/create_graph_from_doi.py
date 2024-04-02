@@ -54,6 +54,28 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
     return dois
 
 
+def get_personal_token():
+    """
+    GET https://services.openaire.eu/uoa-user-management/api/users/getAccessToken?refreshToken={your_refresh_token}
+    """
+    refresh_token = environ.get('REFRESH_TOKEN', None)
+    global TOKEN
+
+    if refresh_token:
+        logger.info(f"Found refresh token. Obtaining personal token.")
+        query = f"?refreshToken={refresh_token}"
+        api_url = "https://services.openaire.eu/uoa-user-management/api/users/getAccessToken"
+        response = requests.get(api_url + query)
+        logger.info(f"Status code: {response.status_code}")
+        logger.debug(response.json())
+        if response.status_code == 200:
+            TOKEN = response.json()['access_token']
+        else:
+            TOKEN = environ.get('TOKEN', None)
+    else:
+        TOKEN = environ.get('TOKEN', None)
+
+
 def get_output_metadata(doi: str):
     """Request metadata from OpenAire Graph
     """
@@ -62,9 +84,8 @@ def get_output_metadata(doi: str):
     api_url = "https://api.openaire.eu/search/researchProducts"
     response = requests.get(api_url + query, headers=headers)
 
-    # Raise warning of DOI did not return a response
-    if response.status_code > 200:
-        logger.warning("DOI {doi} did not return a response")
+    logger.debug(f"Response code: {response.status_code}")
+    response.raise_for_status()
 
     error = response.json().get('error')
     if error:
@@ -73,8 +94,23 @@ def get_output_metadata(doi: str):
     clean_doi = doi.replace("/", "")
     with open(f'data/json/{clean_doi}.json', 'w') as json_file:
         dump(response.json(), json_file)
-    return response.json()
 
+    if response.json()['response']['results']:
+        return response.json()
+    else:
+        raise ValueError(f"DOI {doi} returned no results")
+
+def match_author_name(author:Dict) -> List:
+    name = f"{author['first_name'][0]} {author['last_name']}"
+    results = list(
+                match()
+                .node(labels="Author", variable="a")
+                .where(item="left(a.first_name, 1) + ' ' + a.last_name",
+                        operator=Operator.EQUAL, literal=name)
+                .return_(results=[("a.uuid", "uuid")])
+                .execute()
+                )
+    return results
 
 
 def check_upload_author(author: Dict, graph: Memgraph) -> Author:
@@ -89,28 +125,27 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
     graph: Memgraph
         Connection to a Memgraph instance
     """
+    results = None
     if author['orcid']:
         # Match the ORCID (preferred)
-        orcid_url = f"https://orcid.org/{author['orcid']}"
         results = list(
                     match()
                     .node(labels="Author", variable="a")
                     .where(item="a.orcid", operator=Operator.EQUAL,
-                           literal=orcid_url)
-                    .return_([("a.uuid", 'uuid')])
+                           literal=f"https://orcid.org/{author['orcid']}")
+                    .return_([("a.uuid", 'uuid'), ("a.last_name", "last_name")])
                     .execute()
-                    )
+        )
+
+    # Check that the ORCID name actually matches the author name (is the ORCID correct?)
+    if results:
+        error_message = f"Result from ORCID {author['orcid']} does not match name of author"
+        if not results[0]['last_name'] == author['last_name']:
+            logger.warning(error_message)
+            results = match_author_name(author)
     else:
         # Try a match on full name, or create new node
-        name = f"{author['first_name']} {author['last_name']}"
-        results = list(
-                    match()
-                    .node(labels="Author", variable="a")
-                    .where(item="a.first_name + ' ' + a.last_name",
-                           operator=Operator.EQUAL, literal=name)
-                    .return_(results=[("a.uuid", "uuid")])
-                    .execute()
-                    )
+        results = match_author_name(author)
 
     if results:
         logger.info(f"Author {author['first_name']} {author['last_name']} exists")
@@ -197,14 +232,20 @@ def main(list_of_dois, graph):
     dois = validate_dois(list_of_dois)
     valid_dois = dois['valid']
 
+    get_personal_token()
+
     for valid_doi in valid_dois:
-        metadata = get_output_metadata(valid_doi)
-        output: ArticleMetadata = parse_metadata(metadata, valid_doi)
-        result = upload_article_to_memgraph(output, graph)
-        if result:
-            logger.info("Upload successful")
+        try:
+            metadata = get_output_metadata(valid_doi)
+        except ValueError as ex:
+            logger.error(f"No metadata found for doi {valid_doi}. Message: {ex}")
         else:
-            logger.info("Upload failed")
+            output: ArticleMetadata = parse_metadata(metadata, valid_doi)
+            result = upload_article_to_memgraph(output, graph)
+            if result:
+                logger.info("Upload successful")
+            else:
+                logger.info("Upload failed")
 
     return True
 
