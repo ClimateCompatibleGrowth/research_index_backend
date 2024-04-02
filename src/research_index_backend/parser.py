@@ -40,6 +40,9 @@ def parse_author(metadata: str) -> AuthorMetadata:
         if len(names) == 2:
             first_name = names[0]
             last_name = names[1]
+        elif len(names) > 2:
+            first_name = names[0]
+            last_name = " ".join(names[1:])
         else:
             logger.debug(f"Split name produced {names}")
             first_name = None
