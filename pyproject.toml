@@ -26,9 +26,9 @@ classifiers = [
 dependencies = ["tqdm", "gqlalchemy", "pandas", "rdflib", "requests"]
 
 [project.urls]
-Documentation = "https://github.com/climateCompatibleGrowth/research-index-backend#readme"
-Issues = "https://github.com/climateCompatibleGrowth/research-index-backend/issues"
-Source = "https://github.com/climateCompatibleGrowth/research-index-backend"
+Documentation = "https://github.com/ClimateCompatibleGrowth/research_index_backend#readme"
+Issues = "https://github.com/ClimateCompatibleGrowth/research_index_backend/issues"
+Source = "https://github.com/ClimateCompatibleGrowth/research_index_backend"
 
 [tool.hatch.version]
 source = "vcs"
