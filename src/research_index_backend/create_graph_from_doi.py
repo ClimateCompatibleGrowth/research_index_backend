@@ -22,6 +22,7 @@ from collections import defaultdict
 from dataclasses import dataclass, asdict
 from json import dump
 from sys import argv
+from tqdm import tqdm
 
 from . parser import parse_metadata
 from . models import Article, ArticleMetadata, Author, author_of
@@ -139,7 +140,7 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
 
     # Check that the ORCID name actually matches the author name (is the ORCID correct?)
     if results:
-        error_message = f"Result from ORCID {author['orcid']} does not match name of author"
+        error_message = f"Result from ORCID {author['orcid']} does not match author name: {author['first_name']} {author['last_name']}"
         if not results[0]['last_name'] == author['last_name']:
             logger.warning(error_message)
             results = match_author_name(author)
@@ -160,6 +161,7 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
         author_object = Author(**author)
 
         author_node = author_object.save(graph)
+        logger.info(f"Author {author['first_name']} {author['last_name']} does not exist. Created new node.")
 
     return author_node
 
@@ -178,6 +180,9 @@ def upload_article_to_memgraph(output: ArticleMetadata,
 
     author_nodes: List[Author] = []
 
+    article_dict = asdict(output)
+    author_list: List[Dict] = article_dict.pop('authors')
+
     # Check output exists, otherwise create
     results = list(
                     match()
@@ -190,29 +195,27 @@ def upload_article_to_memgraph(output: ArticleMetadata,
     if results:
 
         article_node = Article(doi=results[0]['doi']).load(graph)
+        logger.info(f"Output {output.doi} exists. Loaded from graph")
 
     else:
         # Create article node
-
-        article_dict = asdict(output)
-        author_list: List[Dict] = article_dict.pop('authors')
-
         article_dict['uuid'] = str(uuid4())
 
         # Create Article object
         article = Article(**article_dict)
         article_node = article.save(graph)
+        logger.info(f"Output {output.doi} did not exist. Created new node")
 
-        # Check authors exists, otherwise create
-        for author in author_list:
-            author_node = check_upload_author(author, graph)
-            author_nodes.append(author_node)
+    # Check authors exists, otherwise create
+    for author in author_list:
+        author_node = check_upload_author(author, graph)
+        author_nodes.append(author_node)
 
-            # Create relations between output and authors
-            author_of(_start_node_id=author_node._id,
-                      _end_node_id=article_node._id,
-                      rank=author['rank']
-                      ).save(graph)
+        # Create relations between output and authors
+        author_of(_start_node_id=author_node._id,
+                  _end_node_id=article_node._id,
+                  rank=author['rank']
+                  ).save(graph)
 
     return True
 
@@ -226,7 +229,7 @@ def main(list_of_dois, graph):
 
     get_personal_token()
 
-    for valid_doi in valid_dois:
+    for valid_doi in tqdm(valid_dois):
         try:
             metadata = get_output_metadata(valid_doi)
         except ValueError as ex:

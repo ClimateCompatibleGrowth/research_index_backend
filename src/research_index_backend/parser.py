@@ -91,7 +91,6 @@ def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
             count = 0
             for x in title_meta:
                 count += 1
-                print(f"{count}: {x}")
                 if x['@classid'] == 'main title':
                     title = (x['$'])
                     break
