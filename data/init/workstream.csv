@@ -1,0 +1,33 @@
+﻿id,name,description,theme
+np_ghana,Ghana,,Ghana
+np_india,India,,India
+np_kenya,Kenya,,Kenya
+np_laos,Laos,,Laos
+np_vietnam,Vietnam,,Vietnam
+np_zambia,Zambia,,Zambia
+oa1,Output Area 1,Partnerships,
+oa2,Output Area 2,Core Research,
+oa3,Output Area 3,"Platform, Management and Monitoring, Evaluation and Learning",
+ws1,National Partnerships,,
+ws2_ipa01,ADB-CCG Central,,Partnerships
+ws2_ipa02,Sum4All-Secratariate,,Partnerships
+ws2_ipa03,WBG-CCG Central,,Partnerships
+ws2_ipa04,OpTIMUSCommunity,,Partnerships
+ws2_ipa05,Green Climate Fund,,Partnerships
+ws2_ipa06,Sum4All. Energy & Mobility WG.,,Partnerships
+ws2_ipa07,Sum4All/ADB. Finance WG,,Partnerships
+ws2_ipa08,Green Grids Initiative,,Partnerships
+ws2_ipa09,Rapid Response Function,,Partnerships
+ws2_ipa10,Planning Principles & U4RIA,,Partnerships
+ws2_ipa11,Open Learn Collection,,Partnerships
+ws2_ipa12,Starter Data Kits,,Partnerships
+ws2_ipa13,Summer School and EMPs,,Partnerships
+ws2_ipa14,COP Policy Brief Research,,Partnerships
+ws3,System Design,,Whole Systems
+ws3a,GIS,,Whole Systems
+ws4,System Interactions,,Whole Systems
+ws5,Economics & Policy,,Economics & Policy
+ws5a,Policies for CCG,,Economics & Policy
+ws5b,Decarbonising Transport,,Transport
+ws5c,Investment Pipelines,,Finance
+ws7a,Platform,,Data
