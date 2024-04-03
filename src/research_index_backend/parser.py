@@ -1,8 +1,5 @@
 from typing import List
 from logging import getLogger
-from datetime import datetime
-
-from re import split
 
 
 from .utils import clean_html
