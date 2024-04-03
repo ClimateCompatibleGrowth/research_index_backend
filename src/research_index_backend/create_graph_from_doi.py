@@ -199,20 +199,12 @@ def upload_article_to_memgraph(output: ArticleMetadata,
 
         article_dict['uuid'] = str(uuid4())
 
-        print(article_dict.items())
-
         # Create Article object
         article = Article(**article_dict)
-
-        try:
-            article_node = article.save(graph)
-        except:
-            logger.debug(article)
-            raise
+        article_node = article.save(graph)
 
         # Check authors exists, otherwise create
         for author in author_list:
-            print(author)
             author_node = check_upload_author(author, graph)
             author_nodes.append(author_node)
 
@@ -270,6 +262,8 @@ def entry_point():
     graph.drop_database()
 
     result = main(list_of_dois, graph)
+
+    return result
 
 
 if __name__ == "__main__":

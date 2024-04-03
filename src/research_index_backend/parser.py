@@ -109,7 +109,7 @@ def parse_metadata(metadata: str, valid_doi: str) -> ArticleMetadata:
 
         journal = entity.get('journal', None)
         if journal:
-            journal = journal['$']
+            journal = clean_html(journal['$'])
         else:
             journal = None
 
