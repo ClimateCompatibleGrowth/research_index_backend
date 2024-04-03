@@ -56,3 +56,36 @@ class Article(Output):
 
 class author_of(Relationship):
     rank: int
+
+
+class Country(Node):
+    id: str
+    name: str
+    dbpedia: Optional[str]
+    latitude: Optional[float]
+    longitude: Optional[float]
+
+
+class Unit(Node):
+    id: str
+    name: Optional[str]
+
+
+class Workstream(Unit):
+    pass
+
+
+class Partner(Unit):
+    dbpedia: Optional[str]
+
+
+class member_of(Relationship):
+    pass
+
+
+class unit_of(Relationship):
+    pass
+
+
+class refers_to(Relationship):
+    pass

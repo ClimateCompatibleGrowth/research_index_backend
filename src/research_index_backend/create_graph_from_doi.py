@@ -18,6 +18,7 @@ from dataclasses import asdict
 from json import dump
 from logging import DEBUG, basicConfig, getLogger
 from os import environ
+from os.path import join
 from re import IGNORECASE, compile
 from typing import Dict, List
 from uuid import uuid4
@@ -27,6 +28,7 @@ from gqlalchemy import Memgraph, match
 from gqlalchemy.query_builders.memgraph_query_builder import Operator
 from tqdm import tqdm
 
+from .create_graph import load_initial_data
 from .models import Article, ArticleMetadata, Author, author_of
 from .parser import parse_metadata
 
@@ -151,7 +153,10 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
 
     # Check that the ORCID name actually matches the author name (is the ORCID correct?)
     if results:
-        error_message = f"Result from ORCID {author['orcid']} does not match author name: {author['first_name']} {author['last_name']}"
+        error_message = (
+            f"Result from ORCID {author['orcid']} does not match author name: "
+            + f"{author['first_name']} {author['last_name']}"
+        )
         if not results[0]["last_name"] == author["last_name"]:
             logger.warning(error_message)
             results = match_author_name(author)
@@ -173,7 +178,10 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
 
         author_node = author_object.save(graph)
         logger.info(
-            f"Author {author['first_name']} {author['last_name']} does not exist. Created new node."
+            (
+                f"Author {author['first_name']} {author['last_name']} "
+                + "does not exist. Created new node."
+            )
         )
 
     return author_node
@@ -268,6 +276,27 @@ def argument_parser():
     return args
 
 
+def add_country_relations(graph: Memgraph):
+    """Runs a query to add links to countries
+
+    Adds a link to a country if the abstract contains the name
+    of the country
+    """
+    query = """
+        MATCH (c:Country)
+        CALL {
+        WITH c
+        MATCH (o:Output)
+        WHERE o.abstract CONTAINS c.name
+        AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
+        CREATE (o)-[r:REFERS_TO]->(c)
+        RETURN r
+        }
+        RETURN r
+        """
+    graph.execute(query)
+
+
 def entry_point():
     """This is the console entry point to the programme"""
 
@@ -282,10 +311,13 @@ def entry_point():
 
     logger.info(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
     graph = Memgraph(host=MG_HOST, port=MG_PORT)
+
     if args.initialise:
         graph.drop_database()
+        load_initial_data(graph, join("data", "init"))
 
     result = main(list_of_dois, graph)
+    add_country_relations(graph)
 
     if result:
         print("Success")
