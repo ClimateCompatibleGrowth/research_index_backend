@@ -1,11 +1,11 @@
+from dataclasses import dataclass
+from typing import List, Optional
+
 from gqlalchemy import Node, Relationship
-from typing import Optional, List
-from dataclasses import dataclass, asdict
-from enum import Enum
 
 
 @dataclass
-class AuthorMetadata():
+class AuthorMetadata:
     orcid: Optional[str]
     last_name: str
     first_name: str
@@ -13,7 +13,7 @@ class AuthorMetadata():
 
 
 @dataclass
-class ArticleMetadata():
+class ArticleMetadata:
     doi: Optional[str]
     title: Optional[str]
     abstract: Optional[str]
@@ -37,11 +37,10 @@ class Author(Node):
 
 
 class Output(Node):
-    uuid: str
+    uuid: Optional[str]
 
 
 class Article(Output):
-    uuid: Optional[str]
     doi: Optional[str]
     title: Optional[str]
     abstract: Optional[str]

@@ -1,10 +1,14 @@
-from json import load
 import os
-from pytest import fixture
+from json import load
+
 import pytest
 
-from research_index_backend.parser import parse_metadata, parse_author, parse_result_type
 from research_index_backend.models import ArticleMetadata, AuthorMetadata
+from research_index_backend.parser import (
+    parse_author,
+    parse_metadata,
+    parse_result_type,
+)
 
 
 class TestAuthor:
@@ -25,68 +29,65 @@ class TestAuthor:
     def test_author_orcid_pending(self):
 
         fixture = {
-                "@rank": "1",
-                "@name": "Lucy",
-                "@surname": "Allington",
-                "@orcid_pending": "0000-0003-1801-899x",
-                "$": "Allington, Lucy"
-                }
+            "@rank": "1",
+            "@name": "Lucy",
+            "@surname": "Allington",
+            "@orcid_pending": "0000-0003-1801-899x",
+            "$": "Allington, Lucy",
+        }
         actual = parse_author(fixture)
-        expected = AuthorMetadata("0000-0003-1801-899x", "Allington", "Lucy", 1)
+        expected = AuthorMetadata(
+            "0000-0003-1801-899x", "Allington", "Lucy", 1)
         assert actual == expected
 
     def test_author_orcid(self):
         fixture = {
-                "@rank": "5",
-                "@name": "Will",
-                "@surname": "Usher",
-                "@orcid": "0000-0001-9367-1791",
-                "$": "Usher, Will"
-            }
+            "@rank": "5",
+            "@name": "Will",
+            "@surname": "Usher",
+            "@orcid": "0000-0001-9367-1791",
+            "$": "Usher, Will",
+        }
         actual = parse_author(fixture)
-        expected = AuthorMetadata("0000-0001-9367-1791", "Usher", "Will", 5)
+        expected = AuthorMetadata(
+            "0000-0001-9367-1791", "Usher", "Will", 5)
         assert actual == expected
-
 
     def test_author_no_orcid(self):
         fixture = {
-                "@rank": "5",
-                "@name": "Will",
-                "@surname": "Usher",
-                "$": "Usher, Will"
-                }
+            "@rank": "5",
+            "@name": "Will",
+            "@surname": "Usher",
+            "$": "Usher, Will",
+        }
         actual = parse_author(fixture)
         expected = AuthorMetadata(None, "Usher", "Will", 5)
         assert actual == expected
 
-
     def test_author_orcid_no_name(self):
         fixture = {
-                "@rank": "5",
-                "@name": "Will",
-                "@surname": "Usher",
-                "$": "Usher, Will"
-            }
+            "@rank": "5",
+            "@name": "Will",
+            "@surname": "Usher",
+            "$": "Usher, Will",
+        }
         actual = parse_author(fixture)
         expected = AuthorMetadata(None, "Usher", "Will", 5)
         assert actual == expected
 
     def test_author_name_poorly_formed(self):
         fixture = {
-                    "@rank": "13",
-                    "@surname": "Stephanie Hirmer",
-                    "@orcid_pending": "0000-0001-7628-9259",
-                    "$": "null Stephanie Hirmer"
-                }
+            "@rank": "13",
+            "@surname": "Stephanie Hirmer",
+            "@orcid_pending": "0000-0001-7628-9259",
+            "$": "null Stephanie Hirmer",
+        }
         actual = parse_author(fixture)
         expected = AuthorMetadata("0000-0001-7628-9259", "Hirmer", "Stephanie", 13)
         assert actual == expected
 
     def test_author_no_name_no_orcid(self):
-        fixture = {
-            "@rank": "13",
-            "$": "not a name"
-        }
+        fixture = {"@rank": "13", "$": "not a name"}
         actual = parse_author(fixture)
         expected = None
         assert actual == expected
@@ -94,36 +95,52 @@ class TestAuthor:
 
 class TestResearchProduct:
 
-    argnames = 'fixture,expected'
+    argnames = "fixture,expected"
     argvalues = [
-        ({"resulttype": {
-                        "@classid": "dataset",
-                        "@classname": "dataset",
-                        "@schemeid": "dnet:result_typologies",
-                        "@schemename": "dnet:result_typologies"
-                        }
-         }, 'dataset'),
-        ({"resulttype": {
-                        "@classid": "software",
-                        "@classname": "software",
-                        "@schemeid": "dnet:result_typologies",
-                        "@schemename": "dnet:result_typologies"
-                        }
-         }, 'software'),
-        ({"resulttype": {
-                        "@classid": "other",
-                        "@classname": "other",
-                        "@schemeid": "dnet:result_typologies",
-                        "@schemename": "dnet:result_typologies"
-                        }
-         }, 'other'),
-        ({"resulttype": {
-                        "@classid": "publication",
-                        "@classname": "publication",
-                        "@schemeid": "dnet:result_typologies",
-                        "@schemename": "dnet:result_typologies"
-                        }
-         }, 'publication')
+        (
+            {
+                "resulttype": {
+                    "@classid": "dataset",
+                    "@classname": "dataset",
+                    "@schemeid": "dnet:result_typologies",
+                    "@schemename": "dnet:result_typologies",
+                }
+            },
+            "dataset",
+        ),
+        (
+            {
+                "resulttype": {
+                    "@classid": "software",
+                    "@classname": "software",
+                    "@schemeid": "dnet:result_typologies",
+                    "@schemename": "dnet:result_typologies",
+                }
+            },
+            "software",
+        ),
+        (
+            {
+                "resulttype": {
+                    "@classid": "other",
+                    "@classname": "other",
+                    "@schemeid": "dnet:result_typologies",
+                    "@schemename": "dnet:result_typologies",
+                }
+            },
+            "other",
+        ),
+        (
+            {
+                "resulttype": {
+                    "@classid": "publication",
+                    "@classname": "publication",
+                    "@schemeid": "dnet:result_typologies",
+                    "@schemename": "dnet:result_typologies",
+                }
+            },
+            "publication",
+        ),
     ]
 
     @pytest.mark.parametrize(argnames, argvalues)
@@ -165,37 +182,38 @@ class TestResearchProduct:
         assert actual == expected
 
     def test_parse_metadata(self):
-        """
-        """
-        file_path = os.path.join('tests', 'fixtures', 'zenodo.json')
+        """ """
+        file_path = os.path.join("tests", "fixtures", "zenodo.json")
 
-        with open(file_path, 'r') as json_file:
+        with open(file_path, "r") as json_file:
             json = load(json_file)
-            actual = parse_metadata(json, 'test_doi')
+            actual = parse_metadata(json, "test_doi")
 
-            author = {"rank": 1,
-                      "first_name": "Lucy",
-                      "last_name": "Allington",
-                      "orcid": "0000-0003-1801-899x"}
+            author = {
+                "rank": 1,
+                "first_name": "Lucy",
+                "last_name": "Allington",
+                "orcid": "0000-0003-1801-899x",
+            }
 
             authors = [AuthorMetadata(**author)]
 
             article = {
-                'title': "CCG Starter Data Kit: Liberia",
-                'authors': authors,
-                'doi': 'test_doi',
-                'abstract': 'A starter data kit for Liberia',
-                'journal': None,
-                'issue': None,
-                'volume': None,
-                'publication_year': 2023,
-                'publication_month': 1,
-                'publication_day': 16,
-                'publisher': 'Zenodo',
-                'result_type': 'dataset',
-                'resource_type': None
+                "title": "CCG Starter Data Kit: Liberia",
+                "authors": authors,
+                "doi": "test_doi",
+                "abstract": "A starter data kit for Liberia",
+                "journal": None,
+                "issue": None,
+                "volume": None,
+                "publication_year": 2023,
+                "publication_month": 1,
+                "publication_day": 16,
+                "publisher": "Zenodo",
+                "result_type": "dataset",
+                "resource_type": None,
             }
 
-            expected = ArticleMetadata(**article)
+            expected = [ArticleMetadata(**article)]
 
             assert actual == expected
