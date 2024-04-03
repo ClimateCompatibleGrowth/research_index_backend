@@ -29,7 +29,7 @@ from . models import Article, ArticleMetadata, Author, author_of
 
 
 logger = getLogger(__name__)
-basicConfig(filename='example.log', filemode='w', encoding='utf-8', level=DEBUG)
+basicConfig(filename='research_index_backend.log', filemode='w', encoding='utf-8', level=DEBUG)
 
 TOKEN = environ.get('TOKEN')
 
