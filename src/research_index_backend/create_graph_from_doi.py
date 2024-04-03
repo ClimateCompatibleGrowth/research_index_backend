@@ -217,22 +217,22 @@ def upload_article_to_memgraph(output: ArticleMetadata, graph: Memgraph) -> bool
         article_node = article.save(graph)
         logger.info(f"Output {output.doi} did not exist. Created new node")
 
-    # Check authors exists, otherwise create
-    for author in author_list:
-        author_node = check_upload_author(author, graph)
-        author_nodes.append(author_node)
+        # Check authors exists, otherwise create
+        for author in author_list:
+            author_node = check_upload_author(author, graph)
+            author_nodes.append(author_node)
 
-        # Create relations between output and authors
-        author_of(
-            _start_node_id=author_node._id,
-            _end_node_id=article_node._id,
-            rank=author["rank"],
-        ).save(graph)
+            # Create relations between output and authors
+            author_of(
+                _start_node_id=author_node._id,
+                _end_node_id=article_node._id,
+                rank=author["rank"],
+            ).save(graph)
 
     return True
 
 
-def main(list_of_dois, graph):
+def main(list_of_dois, graph) -> bool:
     """ """
 
     dois = validate_dois(list_of_dois)
@@ -257,7 +257,7 @@ def main(list_of_dois, graph):
     return True
 
 
-def entry_point():
+def argument_parser():
 
     parser = argparse.ArgumentParser()
     help = "Provide the path to CSV file containing a list of dois"
@@ -265,12 +265,13 @@ def entry_point():
     help = "Deletes any existing data and creates a new database"
     parser.add_argument("--initialise", action="store_true", help=help)
     args = parser.parse_args()
+    return args
 
-    # if len(argv[1:]) == 1:
-    #     file_path = argv[1]
-    # else:
-    #     raise ValueError("No file path provided to the list of dois.")
 
+def entry_point():
+    """This is the console entry point to the programme"""
+
+    args = argument_parser()
     list_of_dois = []
     with open(args.list_of_dois, "r") as csv_file:
         for line in csv_file:
@@ -286,24 +287,12 @@ def entry_point():
 
     result = main(list_of_dois, graph)
 
-    return result
+    if result:
+        print("Success")
 
 
 if __name__ == "__main__":
 
-    # Read in a list of DOIs from a csv file
-    file_path = "list_of_doi.csv"
-
-    list_of_dois = []
-    with open(file_path, "r") as csv_file:
-        for line in csv_file:
-            list_of_dois.append(line.strip())
-
-    MG_HOST = environ.get("MG_HOST", "127.0.0.1")
-    MG_PORT = int(environ.get("MG_PORT", 7687))
-
-    logger.info(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
-    graph = Memgraph(host=MG_HOST, port=MG_PORT)
-    graph.drop_database()
-
-    result = main(list_of_dois, graph)
+    result = entry_point()
+    if result:
+        print("Success")
