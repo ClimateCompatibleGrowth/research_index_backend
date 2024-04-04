@@ -24,6 +24,7 @@ from typing import Dict, List
 from uuid import uuid4
 
 import requests
+import requests_cache
 from gqlalchemy import Memgraph, match
 from gqlalchemy.query_builders.memgraph_query_builder import Operator
 from tqdm import tqdm
@@ -84,12 +85,13 @@ def get_personal_token():
         TOKEN = environ.get("TOKEN", None)
 
 
-def get_output_metadata(doi: str) -> Dict:
+def get_output_metadata(session: requests_cache.CachedSession, doi: str) -> Dict:
     """Request metadata from OpenAire Graph"""
     query = f"?format=json&doi={doi}"
     headers = {"Authorization": f"Bearer {TOKEN}"}
     api_url = "https://api.openaire.eu/search/researchProducts"
-    response = requests.get(api_url + query, headers=headers)
+
+    response = session.get(api_url + query, headers=headers)
 
     logger.debug(f"Response code: {response.status_code}")
     response.raise_for_status()
@@ -248,9 +250,11 @@ def main(list_of_dois, graph) -> bool:
 
     get_personal_token()
 
+    session = requests_cache.CachedSession("doi_cache")
+
     for valid_doi in tqdm(valid_dois):
         try:
-            metadata = get_output_metadata(valid_doi)
+            metadata = get_output_metadata(session, valid_doi)
         except ValueError as ex:
             logger.error(f"No metadata found for doi {valid_doi}. Message: {ex}")
         else:
