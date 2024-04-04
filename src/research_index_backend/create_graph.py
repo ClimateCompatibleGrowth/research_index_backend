@@ -285,14 +285,18 @@ class GraphMemGraph(GraphAbstract):
 
     def add_countries(self, df):
         def add_country(row: pd.Series):
-            print(f"Adding Country: {row['name']} to the database")
-            dbpedia = "_".join(row["name"].split(" "))
+            print(f"Adding Country: {row['name.official']} to the database")
+            dbpedia = "_".join(row["name.official"].split(" "))
+
+            lat, lon = row["latlng"].split(",")
+
             country = Country(
-                id=row["country"],
-                name=row["name"],
-                latitude=row["latitude"],
-                longitude=row["longitude"],
+                id=row["cca3"],
+                name=row["name.common"],
+                official_name=row["name.official"],
                 dbpedia=dbpedia,
+                latitude=lat,
+                longitude=lon,
             )
             self.countries[row["name"]] = country.save(self.g)
 
