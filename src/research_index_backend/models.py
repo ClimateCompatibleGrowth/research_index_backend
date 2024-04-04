@@ -61,6 +61,7 @@ class author_of(Relationship):
 class Country(Node):
     id: str
     name: str
+    official_name: str
     dbpedia: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
