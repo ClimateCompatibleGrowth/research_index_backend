@@ -6,6 +6,7 @@
 *.xlsx
 *.zip
 *.json
+*.sqlite
 
 *.DS_Store
 

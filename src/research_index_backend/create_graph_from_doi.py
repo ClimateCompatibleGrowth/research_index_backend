@@ -295,6 +295,7 @@ def add_country_relations(graph: Memgraph):
         AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
         CREATE (o)-[r:REFERS_TO]->(c)
         RETURN r
+        LIMIT 1
         }
         RETURN r
         """
