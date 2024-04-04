@@ -18,8 +18,13 @@ def parse_author(metadata: Dict) -> AuthorMetadata | None:
     if not orcid:
         orcid = metadata.get("@orcid_pending", None)
 
-    first_name = metadata.get("@name", "")
-    last_name = metadata.get("@surname", "")
+    first_name = metadata.get("@name", "").title()
+    last_name = metadata.get("@surname", "").title()
+    if first_name in last_name:
+        last_name = last_name.replace(first_name, "").strip()
+    if last_name in first_name:
+        first_name = first_name.replace(last_name, "").strip()
+
     if not first_name and not last_name:
         name = metadata.get("$")
         if name:
