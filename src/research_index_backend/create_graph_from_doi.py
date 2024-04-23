@@ -15,6 +15,7 @@
 import argparse
 from collections import defaultdict
 from dataclasses import asdict
+from difflib import SequenceMatcher
 from json import dump
 from logging import DEBUG, basicConfig, getLogger
 from os import environ
@@ -27,11 +28,15 @@ import requests
 import requests_cache
 from gqlalchemy import Memgraph, match
 from gqlalchemy.query_builders.memgraph_query_builder import Operator
+from mgclient import DatabaseError
 from tqdm import tqdm
 
 from .create_graph import load_initial_data
 from .models import Article, ArticleMetadata, Author, author_of
 from .parser import parse_metadata
+
+ORCID_NAME_SIMILARITY_THRESHOLD = 0.4
+NAME_SIMILARITY_THRESHOLD = 0.8
 
 logger = getLogger(__name__)
 basicConfig(
@@ -52,13 +57,14 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
     # Iterate over the list of possible DOIs and return valid, otherwise raise
     # a warning
     for doi in list_of_dois:
-        match = PATTERN.search(doi)
-        if match:
-            # logger.info(f"{match.group()} is a valid DOI.")
-            dois["valid"].append(match.group())
-        else:
-            logger.warn(f"{doi} is not a DOI.")
-            dois["invalid"].append(doi)
+        if not doi == "":
+            match = PATTERN.search(doi)
+            if match:
+                # logger.info(f"{match.group()} is a valid DOI.")
+                dois["valid"].append(match.group())
+            else:
+                logger.warn(f"{doi} is not a DOI.")
+                dois["invalid"].append(doi)
 
     return dois
 
@@ -126,6 +132,42 @@ def match_author_name(author: Dict) -> List:
     return results
 
 
+def score_name_similarity(name_results: str, name_author: str) -> float:
+    """Scores the similarity of two names
+
+    Arguments
+    ---------
+    name_results: str
+        Name from the database
+    name_author: str
+        Name from the author
+    """
+    logger.debug(f"Comparing {name_results} with {name_author}")
+
+    def clean(name: str) -> str:
+        return name.strip().lower()
+
+    name_results = clean(name_results)
+    name_author = clean(name_author)
+
+    def inverse(name: str) -> str:
+        return " ".join(reversed(name.split(" ")))
+
+    matcher = SequenceMatcher(None, a=name_results, b=name_author)
+    ratio_a = matcher.ratio()
+    if ratio_a > NAME_SIMILARITY_THRESHOLD:
+        return ratio_a
+    else:
+        # Try reversing the name order
+        matcher.set_seq1(inverse(name_results))
+        ratio_b = matcher.ratio()
+
+    if ratio_b > NAME_SIMILARITY_THRESHOLD:
+        return ratio_b
+    else:
+        return (ratio_a + ratio_b) / 2.0
+
+
 def check_upload_author(author: Dict, graph: Memgraph) -> Author:
     """Checks is an author exists, and creates if not
 
@@ -139,7 +181,9 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
         Connection to a Memgraph instance
     """
     results = None
-    if author["orcid"]:
+
+    orcid = author.get("orcid", None)
+    if orcid:
         # Match the ORCID (preferred)
         results = list(
             match()
@@ -149,7 +193,13 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
                 operator=Operator.EQUAL,
                 literal=f"https://orcid.org/{author['orcid']}",
             )
-            .return_([("a.uuid", "uuid"), ("a.last_name", "last_name")])
+            .return_(
+                [
+                    ("a.uuid", "uuid"),
+                    ("a.first_name", "first_name"),
+                    ("a.last_name", "last_name"),
+                ]
+            )
             .execute()
         )
 
@@ -159,8 +209,12 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
             f"Result from ORCID {author['orcid']} does not match author name: "
             + f"{author['first_name']} {author['last_name']}"
         )
-        if not results[0]["last_name"] == author["last_name"]:
-            logger.warning(error_message)
+        logger.debug(f"Results: {results}")
+        name_results = results[0]["first_name"] + " " + results[0]["last_name"]
+        name_author = author["first_name"] + " " + author["last_name"]
+        score = score_name_similarity(name_results, name_author)
+        if score < ORCID_NAME_SIMILARITY_THRESHOLD:
+            logger.warning(error_message + f". Ratio: {score}")
             results = match_author_name(author)
     else:
         # Try a match on full name, or create new node
@@ -260,7 +314,13 @@ def main(list_of_dois, graph) -> bool:
         else:
             outputs_metadata = parse_metadata(metadata, valid_doi)
             for output in outputs_metadata:
-                result = upload_article_to_memgraph(output, graph)
+                try:
+                    result = upload_article_to_memgraph(output, graph)
+                except DatabaseError as ex:
+                    logger.error(f"Error uploading {output.doi} to Memgraph")
+                    logger.error(f"{ex}")
+                    logger.debug(output)
+                    raise ex
                 if result:
                     logger.info("Upload successful")
                 else:
