@@ -26,3 +26,11 @@
                               Deletes any existing data and creates a new database
 
         $ research_index list_of_dois.csv --initalise
+
+# Development
+
+The package is maintained using hatch.
+
+To run the tests run:
+
+        hatch env test
