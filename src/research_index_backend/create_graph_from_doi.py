@@ -89,6 +89,8 @@ def get_personal_token():
             TOKEN = environ.get("TOKEN", None)
     else:
         TOKEN = environ.get("TOKEN", None)
+        if not TOKEN:
+            raise ValueError("No token found")
 
 
 def get_output_metadata(session: requests_cache.CachedSession, doi: str) -> Dict:
@@ -304,7 +306,7 @@ def main(list_of_dois, graph) -> bool:
 
     get_personal_token()
 
-    session = requests_cache.CachedSession("doi_cache")
+    session = requests_cache.CachedSession("doi_cache", expire_after=30)
 
     for valid_doi in tqdm(valid_dois):
         try:
