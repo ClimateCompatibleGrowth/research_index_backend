@@ -9,6 +9,13 @@
 
 4. Provision Memgraph graph database and set up environment variables
 
+   Once the VM is up and running, SSH into the VM, download and install memgraph
+
+        $ curl -O https://download.memgraph.com/memgraph/v2.14.1/ubuntu-20.04/memgraph_2.14.1-1_amd64.deb
+        $ sudo dpkg -i /memgraph_2.14.1-1_amd64.deb
+
+   Then setup environment variables on the local machine to point to the memgraph VM
+
         $ export MG_HOST=127.168.0.1
         $ export MG_PORT=7687
 
