@@ -18,8 +18,13 @@ def parse_author(metadata: Dict) -> AuthorMetadata | None:
     if not orcid:
         orcid = metadata.get("@orcid_pending", None)
 
-    first_name = metadata.get("@name", "")
-    last_name = metadata.get("@surname", "")
+    first_name = metadata.get("@name", "").title()
+    last_name = metadata.get("@surname", "").title()
+    if first_name in last_name:
+        last_name = last_name.replace(first_name, "").strip()
+    if last_name in first_name:
+        first_name = first_name.replace(last_name, "").strip()
+
     if not first_name and not last_name:
         name = metadata.get("$")
         if name:
@@ -111,9 +116,13 @@ def parse_metadata(metadata: Dict, valid_doi: str) -> List[ArticleMetadata]:
         else:
             publisher = None
 
-        journal = entity.get("journal", None)
-        if journal:
-            journal = clean_html(journal["$"])
+        journal_meta = entity.get("journal", None)
+        if journal_meta:
+            journal = journal_meta.get("$", None)
+            if journal:
+                journal = clean_html(journal)
+            else:
+                logger.debug(f"Journal not empty: {journal_meta}")
         else:
             journal = None
 
@@ -165,7 +174,7 @@ def parse_metadata(metadata: Dict, valid_doi: str) -> List[ArticleMetadata]:
 
         article_object = ArticleMetadata(
             doi,
-            title,
+            clean_html(title),
             abstract,
             all_authors,
             journal,

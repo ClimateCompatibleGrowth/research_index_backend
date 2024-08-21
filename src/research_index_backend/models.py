@@ -1,3 +1,10 @@
+"""This module describes the data model of the backend application
+
+This module defines the graph data model including nodes,
+representing various entities,
+and edges, representing relationships between those entities.
+
+"""
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -30,6 +37,8 @@ class ArticleMetadata:
 
 
 class Author(Node):
+    """Represents an author of or contributor to an output"""
+
     uuid: str
     first_name: Optional[str]
     last_name: Optional[str]
@@ -37,10 +46,14 @@ class Author(Node):
 
 
 class Output(Node):
+    """A generic research output"""
+
     uuid: Optional[str]
 
 
 class Article(Output):
+    """Node representing a peer reviewed journal article"""
+
     doi: Optional[str]
     title: Optional[str]
     abstract: Optional[str]
@@ -59,6 +72,8 @@ class author_of(Relationship):
 
 
 class Country(Node):
+    """Node representing a country"""
+
     id: str
     name: str
     official_name: str
@@ -68,19 +83,27 @@ class Country(Node):
 
 
 class Unit(Node):
+    """Represents an entity involved in the project"""
+
     id: str
     name: Optional[str]
 
 
 class Workstream(Unit):
+    """Represents a division of the work program"""
+
     pass
 
 
 class Partner(Unit):
+    """Represents part of whole of an institution or organisation"""
+
     dbpedia: Optional[str]
 
 
 class member_of(Relationship):
+    """The relationship between a partner and a workstream"""
+
     pass
 
 
@@ -89,4 +112,6 @@ class unit_of(Relationship):
 
 
 class refers_to(Relationship):
+    """The relationship between an output and a country or topic"""
+
     pass

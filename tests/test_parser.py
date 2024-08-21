@@ -36,8 +36,7 @@ class TestAuthor:
             "$": "Allington, Lucy",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata(
-            "0000-0003-1801-899x", "Allington", "Lucy", 1)
+        expected = AuthorMetadata("0000-0003-1801-899x", "Allington", "Lucy", 1)
         assert actual == expected
 
     def test_author_orcid(self):
@@ -49,8 +48,7 @@ class TestAuthor:
             "$": "Usher, Will",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata(
-            "0000-0001-9367-1791", "Usher", "Will", 5)
+        expected = AuthorMetadata("0000-0001-9367-1791", "Usher", "Will", 5)
         assert actual == expected
 
     def test_author_no_orcid(self):
@@ -90,6 +88,17 @@ class TestAuthor:
         fixture = {"@rank": "13", "$": "not a name"}
         actual = parse_author(fixture)
         expected = None
+        assert actual == expected
+
+    def test_author_no_first_name(self):
+        fixture = {
+            "@rank": "1",
+            "@name": "Antoinette",
+            "@surname": "HABINSHUTI Antoinette",
+            "$": "HABINSHUTI Antoinette",
+        }
+        actual = parse_author(fixture)
+        expected = AuthorMetadata(None, "Habinshuti", "Antoinette", 1)
         assert actual == expected
 
 
