@@ -47,7 +47,7 @@ TOKEN = environ.get("TOKEN")
 
 # Use regex pattern from
 # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-PATTERN = compile("10.\d{4,9}\/[-._;()\/:A-Z0-9]+", IGNORECASE)
+PATTERN = compile("^10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$", IGNORECASE)
 
 
 def validate_dois(list_of_dois: List) -> Dict[str, List]:
@@ -60,7 +60,7 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
         if not doi == "":
             match = PATTERN.search(doi)
             if match:
-                # logger.info(f"{match.group()} is a valid DOI.")
+                logger.info(f"{match.group()} is a valid DOI.")
                 dois["valid"].append(match.group())
             else:
                 logger.warn(f"{doi} is not a DOI.")
