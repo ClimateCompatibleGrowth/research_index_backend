@@ -38,9 +38,18 @@ from .parser import parse_metadata
 ORCID_NAME_SIMILARITY_THRESHOLD = 0.4
 NAME_SIMILARITY_THRESHOLD = 0.8
 
+OPENAIRE_API = "https://api.openaire.eu"
+OPENAIRE_SERVICE = "https://services.openaire.eu"
+OPENAIRE_TOKEN = (
+    f"{OPENAIRE_SERVICE}/uoa-user-management/api/users/getAccessToken"
+)
+
 logger = getLogger(__name__)
 basicConfig(
-    filename="research_index_backend.log", filemode="w", encoding="utf-8", level=DEBUG
+    filename="research_index_backend.log",
+    filemode="w",
+    encoding="utf-8",
+    level=DEBUG,
 )
 
 TOKEN = environ.get("TOKEN")
@@ -77,9 +86,7 @@ def get_personal_token():
     if refresh_token:
         logger.info("Found refresh token. Obtaining personal token.")
         query = f"?refreshToken={refresh_token}"
-        api_url = (
-            "https://services.openaire.eu/uoa-user-management/api/users/getAccessToken"
-        )
+        api_url = OPENAIRE_TOKEN
         response = requests.get(api_url + query)
         logger.info(f"Status code: {response.status_code}")
         logger.debug(response.json())
@@ -93,11 +100,13 @@ def get_personal_token():
             raise ValueError("No token found")
 
 
-def get_output_metadata(session: requests_cache.CachedSession, doi: str) -> Dict:
+def get_output_metadata(
+    session: requests_cache.CachedSession, doi: str
+) -> Dict:
     """Request metadata from OpenAire Graph"""
     query = f"?format=json&doi={doi}"
     headers = {"Authorization": f"Bearer {TOKEN}"}
-    api_url = "https://api.openaire.eu/search/researchProducts"
+    api_url = f"{OPENAIRE_API}/search/researchProducts"
 
     response = session.get(api_url + query, headers=headers)
 
@@ -205,7 +214,8 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
             .execute()
         )
 
-    # Check that the ORCID name actually matches the author name (is the ORCID correct?)
+    # Check that the ORCID name actually matches the author name
+    # (is the ORCID correct?)
     if results:
         error_message = (
             f"Result from ORCID {author['orcid']} does not match author name: "
@@ -223,7 +233,8 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
         results = match_author_name(author)
 
     if results:
-        logger.info(f"Author {author['first_name']} {author['last_name']} exists")
+        name = f"{author['first_name']} {author['last_name']}"
+        logger.info(f"Author {name} exists")
         author_node = Author(uuid=results[0]["uuid"]).load(graph)
     else:
         # Create author node
@@ -245,7 +256,9 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
     return author_node
 
 
-def upload_article_to_memgraph(output: ArticleMetadata, graph: Memgraph) -> bool:
+def upload_article_to_memgraph(
+    output: ArticleMetadata, graph: Memgraph
+) -> bool:
     """
 
     Arguments:
@@ -312,7 +325,7 @@ def main(list_of_dois, graph) -> bool:
         try:
             metadata = get_output_metadata(session, valid_doi)
         except ValueError as ex:
-            logger.error(f"No metadata found for doi {valid_doi}. Message: {ex}")
+            logger.error(f"No metadata found for doi {valid_doi}: {ex}")
         else:
             outputs_metadata = parse_metadata(metadata, valid_doi)
             for output in outputs_metadata:
@@ -364,6 +377,18 @@ def add_country_relations(graph: Memgraph):
     graph.execute(query)
 
 
+def add_indexes(graph: Memgraph):
+    query = """
+        CREATE INDEX ON :Country(id);
+        CREATE INDEX ON :Author(uuid);
+        CREATE INDEX ON :Article(uuid);
+        CREATE INDEX ON :Article(result_type)
+        CREATE EDGE INDEX ON :author_of(rank);
+        ANALYZE GRAPH;
+        """
+    graph.execute(query)
+
+
 def entry_point():
     """This is the console entry point to the programme"""
 
@@ -385,6 +410,8 @@ def entry_point():
 
     result = main(list_of_dois, graph)
     add_country_relations(graph)
+
+    add_indexes(graph)
 
     if result:
         print("Success")
