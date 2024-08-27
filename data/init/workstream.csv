@@ -1,10 +1,10 @@
 ﻿id,name,description,theme
-np_ghana,Ghana,,Ghana
-np_india,India,,India
-np_kenya,Kenya,,Kenya
-np_laos,Laos,,Laos
-np_vietnam,Vietnam,,Vietnam
-np_zambia,Zambia,,Zambia
+np_ghana,Ghana,National Partnerships Ghana,Ghana
+np_india,India,National Partnerships India,India
+np_kenya,Kenya,National Partnerships Kenya,Kenya
+np_laos,Laos,National Partnerships Laos,Laos
+np_vietnam,Vietnam,National Partnerships Vietnam,Vietnam
+np_zambia,Zambia,National Partnerships Zambia,Zambia
 oa1,Output Area 1,Partnerships,
 oa2,Output Area 2,Core Research,
 oa3,Output Area 3,"Platform, Management and Monitoring, Evaluation and Learning",
@@ -31,3 +31,4 @@ ws5a,Policies for CCG,,Economics & Policy
 ws5b,Decarbonising Transport,,Transport
 ws5c,Investment Pipelines,,Finance
 ws7a,Platform,,Data
+ws7b,Management,,
