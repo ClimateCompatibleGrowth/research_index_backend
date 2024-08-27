@@ -5,6 +5,7 @@ representing various entities,
 and edges, representing relationships between those entities.
 
 """
+
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -34,6 +35,7 @@ class ArticleMetadata:
     publisher: Optional[str]
     result_type: Optional[str]
     resource_type: Optional[str]
+    openalex: Optional[str]
 
 
 class Author(Node):
@@ -43,6 +45,7 @@ class Author(Node):
     first_name: Optional[str]
     last_name: Optional[str]
     orcid: Optional[str]
+    openalex: Optional[str]
 
 
 class Output(Node):
@@ -65,6 +68,8 @@ class Article(Output):
     publication_day: Optional[int]
     publisher: Optional[str]
     result_type: Optional[str]
+    resource_type: Optional[str]
+    openalex: Optional[str]
 
 
 class author_of(Relationship):
@@ -99,6 +104,7 @@ class Partner(Unit):
     """Represents part of whole of an institution or organisation"""
 
     dbpedia: Optional[str]
+    openalex: Optional[str]
 
 
 class member_of(Relationship):

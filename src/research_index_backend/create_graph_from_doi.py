@@ -16,7 +16,6 @@ import argparse
 from collections import defaultdict
 from dataclasses import asdict
 from difflib import SequenceMatcher
-from json import dump
 from logging import DEBUG, basicConfig, getLogger
 from os import environ
 from os.path import join
@@ -32,6 +31,10 @@ from mgclient import DatabaseError
 from tqdm import tqdm
 
 from .create_graph import load_initial_data
+from .get_metadata import (
+    get_metadata_from_openaire,
+    get_metadata_from_openalex,
+)
 from .models import Article, ArticleMetadata, Author, author_of
 from .parser import parse_metadata
 
@@ -56,7 +59,7 @@ TOKEN = environ.get("TOKEN")
 
 # Use regex pattern from
 # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-PATTERN = compile("^10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$", IGNORECASE)
+PATTERN = compile("10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$", IGNORECASE)
 
 
 def validate_dois(list_of_dois: List) -> Dict[str, List]:
@@ -67,12 +70,12 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
     # a warning
     for doi in list_of_dois:
         if not doi == "":
-            match = PATTERN.search(doi)
-            if match:
-                logger.info(f"{match.group()} is a valid DOI.")
-                dois["valid"].append(match.group())
+            search = PATTERN.search(doi)
+            if search:
+                logger.info(f"{search.group()} is a valid DOI.")
+                dois["valid"].append(search.group())
             else:
-                logger.warn(f"{doi} is not a DOI.")
+                logger.warning(f"{doi} is not a DOI.")
                 dois["invalid"].append(doi)
 
     return dois
@@ -101,30 +104,24 @@ def get_personal_token():
 
 
 def get_output_metadata(
-    session: requests_cache.CachedSession, doi: str
+    session: requests_cache.CachedSession, doi: str,
+    source: str = "OpenAire"
 ) -> Dict:
-    """Request metadata from OpenAire Graph"""
-    query = f"?format=json&doi={doi}"
-    headers = {"Authorization": f"Bearer {TOKEN}"}
-    api_url = f"{OPENAIRE_API}/search/researchProducts"
+    """Request metadata from OpenAire Graph
 
-    response = session.get(api_url + query, headers=headers)
-
-    logger.debug(f"Response code: {response.status_code}")
-    response.raise_for_status()
-
-    error = response.json().get("error")
-    if error:
-        raise ValueError(error)
-
-    clean_doi = doi.replace("/", "")
-    with open(f"data/json/{clean_doi}.json", "w") as json_file:
-        dump(response.json(), json_file)
-
-    if response.json()["response"]["results"]:
-        return response.json()
+    Arguments
+    ---------
+    session: CachedSession
+    doi: str
+    source: str, default='OpenAire'
+        The API to connect to
+    """
+    if source == "OpenAire":
+        return get_metadata_from_openaire(session, doi)
+    elif source == "OpenAlex":
+        return get_metadata_from_openalex(session, doi)
     else:
-        raise ValueError(f"DOI {doi} returned no results")
+        raise ValueError("Incorrect argument for output metadata source")
 
 
 def match_author_name(author: Dict) -> List:
@@ -323,11 +320,24 @@ def main(list_of_dois, graph) -> bool:
 
     for valid_doi in tqdm(valid_dois):
         try:
-            metadata = get_output_metadata(session, valid_doi)
+            openalex_metadata = get_output_metadata(
+                session, valid_doi, "OpenAlex"
+            )
         except ValueError as ex:
-            logger.error(f"No metadata found for doi {valid_doi}: {ex}")
+            logger.error(
+                f"No OpenAlex metadata found for doi {valid_doi}: {ex}"
+            )
+            openalex_metadata = {"id": None}
+        try:
+            metadata = get_output_metadata(session, valid_doi, "OpenAire")
+        except ValueError as ex:
+            logger.error(
+                f"No OpenAire metadata found for doi {valid_doi}: {ex}"
+            )
         else:
-            outputs_metadata = parse_metadata(metadata, valid_doi)
+            outputs_metadata = parse_metadata(
+                metadata, valid_doi, openalex_metadata
+            )
             for output in outputs_metadata:
                 try:
                     result = upload_article_to_memgraph(output, graph)
@@ -337,9 +347,9 @@ def main(list_of_dois, graph) -> bool:
                     logger.debug(output)
                     raise ex
                 if result:
-                    logger.info("Upload successful")
+                    logger.info(f"Upload {valid_doi} successful")
                 else:
-                    logger.info("Upload failed")
+                    logger.warning(f"Upload {valid_doi} failed")
 
     return True
 
@@ -378,15 +388,16 @@ def add_country_relations(graph: Memgraph):
 
 
 def add_indexes(graph: Memgraph):
-    query = """
-        CREATE INDEX ON :Country(id);
-        CREATE INDEX ON :Author(uuid);
-        CREATE INDEX ON :Article(uuid);
-        CREATE INDEX ON :Article(result_type)
-        CREATE EDGE INDEX ON :author_of(rank);
-        ANALYZE GRAPH;
-        """
-    graph.execute(query)
+    queries = [
+        "CREATE INDEX ON :Country(id);",
+        "CREATE INDEX ON :Author(uuid);",
+        "CREATE INDEX ON :Article(uuid);",
+        "CREATE INDEX ON :Article(result_type);",
+        "CREATE EDGE INDEX ON :author_of(rank);",
+        "ANALYZE GRAPH;",
+    ]
+    for query in queries:
+        graph.execute(query)
 
 
 def entry_point():

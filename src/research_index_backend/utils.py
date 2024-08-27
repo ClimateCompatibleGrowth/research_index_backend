@@ -1,12 +1,17 @@
-from re import compile, sub, IGNORECASE
 from html import unescape
+from re import compile, sub
 from unicodedata import normalize
-from codecs import decode
 
-CLEANR = compile('<.*?>')
+CLEANR = compile("<.*?>")
+
 
 def clean_html(raw_html):
-    """Remove HTML markup from a string and normalize UTF8
-    """
-    cleantext = sub(CLEANR, '', raw_html).replace("\xa0", " ").replace("�", " ").replace("&amp;", "&")
-    return unescape(normalize('NFC', cleantext))
+    """Remove HTML markup from a string and normalize UTF8"""
+    cleantext = (
+        sub(CLEANR, "", raw_html)
+        .replace("\xa0", " ")
+        .replace("�", " ")
+        .replace("&amp;", "&")
+        .replace("\u202f", " ")
+    )
+    return unescape(normalize("NFC", cleantext))

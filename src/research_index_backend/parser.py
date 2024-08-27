@@ -53,7 +53,9 @@ def parse_author(metadata: Dict) -> AuthorMetadata | None:
             last_name = None
 
     rank = int(metadata.get("@rank", 1))
-    logger.info(f"Creating author metadata: {first_name} {last_name} {orcid} {rank}")
+    logger.info(
+        f"Creating author metadata: {first_name} {last_name} {orcid} {rank}"
+    )
     if first_name and last_name:
         return AuthorMetadata(orcid, last_name, first_name, rank)
     else:
@@ -79,7 +81,9 @@ def parse_result_type(metadata: Dict) -> str:
     return result_type
 
 
-def parse_metadata(metadata: Dict, valid_doi: str) -> List[ArticleMetadata]:
+def parse_metadata(
+    metadata: Dict, valid_doi: str, openalex_metadata: Dict
+) -> List[ArticleMetadata]:
     """Parses the response from the OpenAire Graph API
 
     Notes
@@ -152,10 +156,14 @@ def parse_metadata(metadata: Dict, valid_doi: str) -> List[ArticleMetadata]:
         logger.info(f"Resource {doi} is a {result_type}")
 
         resource_type = entity.get("resourcetype", None)
-        if resource_type and (resource_type["@schemeid"] == "dnet:result_typologies"):
-            resource_type = resource_type.get("@classid")
+        if resource_type and (
+            resource_type["@schemeid"] == "dnet:result_typologies"
+        ):
+            resource_type = resource_type.get("@classname")
         else:
-            logger.debug(f"Could not identify result type from {resource_type}")
+            logger.debug(
+                f"Could not identify instance type from {resource_type}"
+            )
             resource_type = None
 
         issue = None
@@ -186,6 +194,7 @@ def parse_metadata(metadata: Dict, valid_doi: str) -> List[ArticleMetadata]:
             publisher,
             result_type,
             resource_type,
+            openalex_metadata["id"],
         )
         articles_metadata.append(article_object)
 
