@@ -1,11 +1,12 @@
-﻿id,name,dbpedia
-oxford,University of Oxford,University_of_Oxford
-kth,KTH Royal Institute of Technology,KTH_Royal_Institute_of_Technology
-cambridge,University of Cambridge,University_of_Cambridge
-loughborough,University of Loughborough,Loughborough_University
-imperial,Imperial College London,Imperial_College_London
-cge,Centre for Global Equality,
-ou,Open University,Open_University
-ucl,University College London,University_College_London
-cp,Climate Parliament,
-sc,University of Strathclyde,University_of_Strathclyde
+﻿id,name,dbpedia,ror
+oxford,University of Oxford,University_of_Oxford,https://ror.org/052gg0110
+kth,KTH Royal Institute of Technology,KTH_Royal_Institute_of_Technology,https://ror.org/026vcq606
+cambridge,University of Cambridge,University_of_Cambridge,https://ror.org/013meh722
+loughborough,University of Loughborough,Loughborough_University,https://ror.org/04vg4w365
+imperial,Imperial College London,Imperial_College_London,https://ror.org/041kmwe10
+cge,Centre for Global Equality,,https://ror.org/053vgma94
+ou,Open University,Open_University,https://ror.org/05mzfcs16
+ucl,University College London,University_College_London,https://ror.org/02jx3x895
+cp,Climate Parliament,,
+sc,University of Strathclyde,University_of_Strathclyde,https://ror.org/00n3w3b69
+strathmore,Strathmore University,,https://ror.org/047dnqw48
