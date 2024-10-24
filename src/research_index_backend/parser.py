@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import getLogger
 from typing import Dict, List
 
@@ -160,6 +161,10 @@ def parse_metadata(
             resource_type["@schemeid"] == "dnet:result_typologies"
         ):
             resource_type = resource_type.get("@classname")
+        elif resource_type and (
+            resource_type["@schemeid"] == "dnet:publication_resource"
+        ):
+            resource_type = resource_type.get("@classname")
         else:
             logger.debug(
                 f"Could not identify instance type from {resource_type}"
@@ -194,7 +199,10 @@ def parse_metadata(
             publisher,
             result_type,
             resource_type,
-            openalex_metadata["id"],
+            openalex_metadata.get("id"),
+            openalex_metadata.get("cited_by_count"),
+            datetime.today(),
+            None,
         )
         articles_metadata.append(article_object)
 

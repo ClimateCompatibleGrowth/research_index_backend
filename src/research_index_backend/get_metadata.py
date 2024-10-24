@@ -86,7 +86,7 @@ def get_metadata_from_openalex(session, doi):
             except JSONDecodeError as ex:
                 logger.error(str(ex))
     except requests.exceptions.HTTPError as err:
-        print(str(err))
+        logger.error(str(err))
 
     if response.json():
         return response.json()

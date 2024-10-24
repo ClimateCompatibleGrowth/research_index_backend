@@ -5,6 +5,7 @@
 - Units - organisational units, such as work streams, work packages, partners
 
 """
+
 from abc import ABC
 from os.path import join
 from typing import Dict
@@ -94,7 +95,9 @@ class GraphRDF(GraphAbstract):
         self.g.bind("dbp", DBP)
         PROJECT = URIRef(CCG)
         self.g.add((PROJECT, RDF.type, ORG.OrganizationalCollaboration))
-        self.g.add((PROJECT, SKOS.prefLabel, Literal("Climate Compatible Growth")))
+        self.g.add(
+            (PROJECT, SKOS.prefLabel, Literal("Climate Compatible Growth"))
+        )
         for oa in ["oa1", "oa2", "oa3"]:
             self.g.add((PROJECT, ORG.hasUnit, CCG[f"unit/{oa}"]))
             self.g.add((CCG[f"unit/{oa}"], ORG.unitOf, PROJECT))
@@ -138,8 +141,12 @@ class GraphRDF(GraphAbstract):
 
             def add_author_details(author_id: URIRef, row: pd.DataFrame):
                 self.g.add((author_id, RDF.type, SDO.Person))
-                self.g.add((author_id, SDO.givenName, Literal(row["First Name"])))
-                self.g.add((author_id, SDO.familyName, Literal(row["Last Name"])))
+                self.g.add(
+                    (author_id, SDO.givenName, Literal(row["First Name"]))
+                )
+                self.g.add(
+                    (author_id, SDO.familyName, Literal(row["Last Name"]))
+                )
                 self.g.add(
                     (
                         author_id,
@@ -306,7 +313,10 @@ class GraphMemGraph(GraphAbstract):
         def add_paper(row):
             uuid = row["paper_uuid"]
             self.outputs[uuid] = Article(
-                uuid=uuid, doi=row["DOI"], title=row["title"], abstract=row["Abstract"]
+                uuid=uuid,
+                doi=row["DOI"],
+                title=row["title"],
+                abstract=row["Abstract"],
             ).save(self.g)
 
         df.apply(add_paper, axis=1)
@@ -320,7 +330,8 @@ class GraphMemGraph(GraphAbstract):
             loaded_output = Article(uuid=paper_uuid).load(db=self.g)
 
             author_of(
-                _start_node_id=loaded_author._id, _end_node_id=loaded_output._id
+                _start_node_id=loaded_author._id,
+                _end_node_id=loaded_output._id,
             ).save(self.g)
 
         df.apply(add_authorship, axis=1)
@@ -343,7 +354,9 @@ class GraphMemGraph(GraphAbstract):
             parent = Workstream(id=row["parent"]).load(self.g)
             child = Workstream(id=row["child"]).load(self.g)
 
-            unit_of(_start_node_id=child._id, _end_node_id=parent._id).save(self.g)
+            unit_of(_start_node_id=child._id, _end_node_id=parent._id).save(
+                self.g
+            )
 
         df.apply(add_ws_structure, axis=1)
 
@@ -371,7 +384,9 @@ class GraphMemGraph(GraphAbstract):
                     match()
                     .node(labels="Author", variable="a")
                     .where(
-                        item="a.orcid", operator=Operator.EQUAL, literal=row["orcid"]
+                        item="a.orcid",
+                        operator=Operator.EQUAL,
+                        literal=row["orcid"],
                     )
                     .return_([("a.uuid", "uuid")])
                     .execute()
@@ -379,7 +394,9 @@ class GraphMemGraph(GraphAbstract):
 
             if results:
                 author = Author(uuid=results[0]["uuid"]).load(self.g)
-                member_of(_start_node_id=author._id, _end_node_id=ws._id).save(self.g)
+                member_of(_start_node_id=author._id, _end_node_id=ws._id).save(
+                    self.g
+                )
             else:
                 print(f"Could not find {row['name']} in the database")
 
@@ -424,21 +441,22 @@ class GraphMemGraph(GraphAbstract):
                     match()
                     .node(labels="Author", variable="a")
                     .where(
-                        item="a.orcid", operator=Operator.EQUAL, literal=row["orcid"]
+                        item="a.orcid",
+                        operator=Operator.EQUAL,
+                        literal=row["orcid"],
                     )
                     .return_(results=[("a.uuid", "uuid")])
                     .execute()
                 )
             if results:
                 author = Author(uuid=results[0]["uuid"]).load(self.g)
-                member_of(_start_node_id=author._id, _end_node_id=partner._id).save(
-                    self.g
-                )
+                member_of(
+                    _start_node_id=author._id, _end_node_id=partner._id
+                ).save(self.g)
 
         df.apply(add_affiliation, axis=1)
 
-    @classmethod
-    def add_country_relations(graph):
+    def add_country_relations(self):
         query = """
             MATCH (c:Country)
             CALL {
@@ -451,12 +469,24 @@ class GraphMemGraph(GraphAbstract):
             }
             RETURN r
             """
-        graph.execute(query)
+        self.g.execute(query)
+
+    def create_constraints(self):
+        query = [
+            "CREATE CONSTRAINT ON (n:Output) ASSERT n.doi IS UNIQUE;",
+            "CREATE CONSTRAINT ON (n:Output) ASSERT n.uuid IS UNIQUE;",
+            "CREATE CONSTRAINT ON (a:Author) ASSERT a.uuid IS UNIQUE;",
+            "CREATE CONSTRAINT ON (a:Author) ASSERT a.orcid IS UNIQUE;",
+        ]
+        for q in query:
+            self.g.execute(q)
 
 
 def main(graph: GraphMemGraph):
     """Create the graph of authors and papers"""
-    work_streams = pd.read_excel("project_partners.xlsx", sheet_name="workstream")
+    work_streams = pd.read_excel(
+        "project_partners.xlsx", sheet_name="workstream"
+    )
     graph.add_work_streams(work_streams)
 
     structure = pd.read_excel("project_partners.xlsx", sheet_name="subws")
@@ -486,6 +516,7 @@ def main(graph: GraphMemGraph):
     graph.add_countries(df)
 
     graph.add_country_relations()
+    graph.create_constraints()
 
     return graph.g
 
@@ -525,3 +556,6 @@ def load_initial_data(graph: Memgraph, file_path: str):
 
     df = pd.read_csv(join(file_path, "countries.csv"), quotechar='"')
     memgraph.add_countries(df)
+
+    memgraph.add_country_relations()
+    memgraph.create_constraints()
