@@ -1,7 +1,11 @@
 # Ingest and Natural Language Processing of Research Outputs
 
+The package is not yet deployed to PyPI. Only an editable (development) install is possible.
+
 1. Provide a list of DOIs in a CSV file format `list_of_dois.csv`
-2. Install the package `pip install research_index_backend`
+2. Clone the repository `git clonehttps://github.com/ClimateCompatibleGrowth/research_index_backend.git`
+2. Change directory `cd research_index_backend`
+2. Install the package `pip install -e .` as an editable package (development install)
 3. Obtain an OpenAIRE Graph token or a refresh token and set as an environment variable
 
         $ export TOKEN=<paste token here>
@@ -40,4 +44,4 @@ The package is maintained using hatch.
 
 To run the tests run:
 
-        hatch env test
+        hatch test
