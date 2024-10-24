@@ -7,6 +7,7 @@ and edges, representing relationships between those entities.
 """
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Optional
 
 from gqlalchemy import Node, Relationship
@@ -36,6 +37,9 @@ class ArticleMetadata:
     result_type: Optional[str]
     resource_type: Optional[str]
     openalex: Optional[str]
+    cited_by_count: Optional[int]
+    cited_by_count_date: Optional[datetime]
+    counts_by_year: Optional[dict]
 
 
 class Author(Node):
@@ -70,6 +74,9 @@ class Article(Output):
     result_type: Optional[str]
     resource_type: Optional[str]
     openalex: Optional[str]
+    cited_by_count: Optional[int]
+    cited_by_count_date: Optional[datetime]
+    counts_by_year: Optional[dict]
 
 
 class author_of(Relationship):

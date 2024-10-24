@@ -104,8 +104,7 @@ def get_personal_token():
 
 
 def get_output_metadata(
-    session: requests_cache.CachedSession, doi: str,
-    source: str = "OpenAire"
+    session: requests_cache.CachedSession, doi: str, source: str = "OpenAire"
 ) -> Dict:
     """Request metadata from OpenAire Graph
 
@@ -386,6 +385,21 @@ def add_country_relations(graph: Memgraph):
         """
     graph.execute(query)
 
+    query = """
+        MATCH (c:Country)
+        CALL {
+        WITH c
+        MATCH (o:Output)
+        WHERE o.title CONTAINS c.name
+        AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
+        CREATE (o)-[r:REFERS_TO]->(c)
+        RETURN r
+        LIMIT 1
+        }
+        RETURN r
+        """
+    graph.execute(query)
+
 
 def add_indexes(graph: Memgraph):
     queries = [
@@ -393,7 +407,7 @@ def add_indexes(graph: Memgraph):
         "CREATE INDEX ON :Author(uuid);",
         "CREATE INDEX ON :Article(uuid);",
         "CREATE INDEX ON :Article(result_type);",
-        "CREATE EDGE INDEX ON :author_of(rank);",
+        # "CREATE EDGE INDEX ON :author_of(rank);",
         "ANALYZE GRAPH;",
     ]
     for query in queries:
