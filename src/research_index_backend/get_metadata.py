@@ -1,6 +1,6 @@
 from json import JSONDecodeError, dump
 from logging import DEBUG, basicConfig, getLogger
-from os import environ
+from os import environ, makedirs
 
 import requests
 import requests_cache
@@ -44,8 +44,7 @@ def get_metadata_from_openaire(
     logger.debug(f"Response code: {response.status_code}")
     response.raise_for_status()
 
-    error = response.json().get("error")
-    if error:
+    if error := response.json().get("error"):
         raise ValueError(error)
 
     clean_doi = doi.replace("/", "")
