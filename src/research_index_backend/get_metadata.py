@@ -48,6 +48,9 @@ def get_metadata_from_openaire(
         raise ValueError(error)
 
     clean_doi = doi.replace("/", "")
+    directory = "data/json/openaire"
+    makedirs(directory, exist_ok=True)
+    
     with open(f"data/json/openaire/{clean_doi}.json", "w") as json_file:
         try:
             dump(response.json(), json_file)
@@ -78,7 +81,10 @@ def get_metadata_from_openalex(session, doi):
     try:
         response.raise_for_status()
 
+        directory = "data/json/openalex"
         clean_doi = doi.replace("/", "")
+        makedirs(directory, exist_ok=True)        
+        
         with open(f"data/json/openalex/{clean_doi}.json", "w") as json_file:
             try:
                 dump(response.json(), json_file)
