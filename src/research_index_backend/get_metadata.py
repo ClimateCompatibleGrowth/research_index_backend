@@ -78,13 +78,11 @@ def get_metadata_from_openalex(session, doi):
     query = f"doi:{doi}?mailto=wusher@kth.se"
     api_url = "https://api.openalex.org/works/"
     response = session.get(api_url + query)
+    directory = "data/json/openalex"
+    makedirs(directory, exist_ok=True)        
     try:
         response.raise_for_status()
-
-        directory = "data/json/openalex"
         clean_doi = doi.replace("/", "")
-        makedirs(directory, exist_ok=True)        
-        
         with open(f"data/json/openalex/{clean_doi}.json", "w") as json_file:
             try:
                 dump(response.json(), json_file)
