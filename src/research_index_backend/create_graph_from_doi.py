@@ -125,7 +125,7 @@ def get_output_metadata(
 
 def match_author_name(author: Dict) -> List:
     name = f"{author['first_name'][0]} {author['last_name']}"
-    results = list(
+    return list(
         match()
         .node(labels="Author", variable="a")
         .where(
@@ -136,7 +136,6 @@ def match_author_name(author: Dict) -> List:
         .return_(results=[("a.uuid", "uuid")])
         .execute()
     )
-    return results
 
 
 def score_name_similarity(name_results: str, name_author: str) -> float:
@@ -360,8 +359,7 @@ def argument_parser():
     parser.add_argument("list_of_dois", help=help)
     help = "Deletes any existing data and creates a new database"
     parser.add_argument("--initialise", action="store_true", help=help)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def add_country_relations(graph: Memgraph):
@@ -444,6 +442,5 @@ def entry_point():
 
 if __name__ == "__main__":
 
-    result = entry_point()
-    if result:
+    if result := entry_point():
         print("Success")
