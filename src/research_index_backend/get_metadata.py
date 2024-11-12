@@ -1,6 +1,6 @@
 from json import JSONDecodeError, dump
 from logging import DEBUG, basicConfig, getLogger
-from os import environ
+from os import environ, makedirs
 
 import requests
 import requests_cache
@@ -44,11 +44,13 @@ def get_metadata_from_openaire(
     logger.debug(f"Response code: {response.status_code}")
     response.raise_for_status()
 
-    error = response.json().get("error")
-    if error:
+    if error := response.json().get("error"):
         raise ValueError(error)
 
     clean_doi = doi.replace("/", "")
+    directory = "data/json/openaire"
+    makedirs(directory, exist_ok=True)
+    
     with open(f"data/json/openaire/{clean_doi}.json", "w") as json_file:
         try:
             dump(response.json(), json_file)
@@ -76,9 +78,10 @@ def get_metadata_from_openalex(session, doi):
     query = f"doi:{doi}?mailto=wusher@kth.se"
     api_url = "https://api.openalex.org/works/"
     response = session.get(api_url + query)
+    directory = "data/json/openalex"
+    makedirs(directory, exist_ok=True)        
     try:
         response.raise_for_status()
-
         clean_doi = doi.replace("/", "")
         with open(f"data/json/openalex/{clean_doi}.json", "w") as json_file:
             try:
