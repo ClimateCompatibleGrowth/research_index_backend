@@ -37,15 +37,18 @@ from .get_metadata import (
 )
 from .models import Article, ArticleMetadata, Author, author_of
 from .parser import parse_metadata
+from .config import config
 
-ORCID_NAME_SIMILARITY_THRESHOLD = 0.4
-NAME_SIMILARITY_THRESHOLD = 0.8
+TOKEN = config.token
+
+MG_HOST = config.mg_host
+MG_PORT = config.mg_port
+
+ORCID_NAME_SIMILARITY_THRESHOLD = config.orcid_name_similarity_threshold
+NAME_SIMILARITY_THRESHOLD = config.name_similarity_threshold
 
 OPENAIRE_API = "https://api.openaire.eu"
 OPENAIRE_SERVICE = "https://services.openaire.eu"
-OPENAIRE_TOKEN = (
-    f"{OPENAIRE_SERVICE}/uoa-user-management/api/users/getAccessToken"
-)
 
 logger = getLogger(__name__)
 basicConfig(
@@ -55,7 +58,6 @@ basicConfig(
     level=DEBUG,
 )
 
-TOKEN = environ.get("TOKEN")
 
 # Use regex pattern from
 # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
@@ -81,28 +83,6 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
     return dois
 
 
-def get_personal_token():
-    """Get personal token by providing a refresh token"""
-    refresh_token = environ.get("REFRESH_TOKEN", None)
-    global TOKEN
-
-    if refresh_token:
-        logger.info("Found refresh token. Obtaining personal token.")
-        query = f"?refreshToken={refresh_token}"
-        api_url = OPENAIRE_TOKEN
-        response = requests.get(api_url + query)
-        logger.info(f"Status code: {response.status_code}")
-        logger.debug(response.json())
-        if response.status_code == 200:
-            TOKEN = response.json()["access_token"]
-        else:
-            TOKEN = environ.get("TOKEN", None)
-    else:
-        TOKEN = environ.get("TOKEN", None)
-        if not TOKEN:
-            raise ValueError("No token found")
-
-
 def get_output_metadata(
     session: requests_cache.CachedSession, doi: str, source: str = "OpenAire"
 ) -> Dict:
@@ -116,7 +96,7 @@ def get_output_metadata(
         The API to connect to
     """
     if source == "OpenAire":
-        return get_metadata_from_openaire(session, doi)
+        return get_metadata_from_openaire(session, doi, TOKEN)
     elif source == "OpenAlex":
         return get_metadata_from_openalex(session, doi)
     else:
@@ -312,8 +292,6 @@ def main(list_of_dois, graph) -> bool:
     dois = validate_dois(list_of_dois)
     valid_dois = dois["valid"]
 
-    get_personal_token()
-
     session = requests_cache.CachedSession("doi_cache", expire_after=30)
 
     for valid_doi in tqdm(valid_dois):
@@ -420,9 +398,6 @@ def entry_point():
     with open(args.list_of_dois, "r") as csv_file:
         for line in csv_file:
             list_of_dois.append(line.strip())
-
-    MG_HOST = environ.get("MG_HOST", "127.0.0.1")
-    MG_PORT = int(environ.get("MG_PORT", 7687))
 
     logger.info(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
     graph = Memgraph(host=MG_HOST, port=MG_PORT)
