@@ -19,11 +19,9 @@ basicConfig(
     level=DEBUG,
 )
 
-TOKEN = environ.get("TOKEN")
-
 
 def get_metadata_from_openaire(
-    session: requests_cache.CachedSession, doi: str
+    session: requests_cache.CachedSession, doi: str, token
 ):
     """Gets metadata from OpenAire
 
@@ -36,7 +34,7 @@ def get_metadata_from_openaire(
     -------
     """
     query = f"?format=json&doi={doi}"
-    headers = {"Authorization": f"Bearer {TOKEN}"}
+    headers = {"Authorization": f"Bearer {token}"}
     api_url = f"{OPENAIRE_API}/search/researchProducts"
 
     response = session.get(api_url + query, headers=headers)

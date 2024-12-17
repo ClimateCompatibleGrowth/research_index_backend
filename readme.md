@@ -6,10 +6,16 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
 2. Clone the repository `git clonehttps://github.com/ClimateCompatibleGrowth/research_index_backend.git`
 2. Change directory `cd research_index_backend`
 2. Install the package `pip install -e .` as an editable package (development install)
-3. Obtain an OpenAIRE Graph token or a refresh token and set as an environment variable
-
-        $ export TOKEN=<paste token here>
-        $ export REFRESH_TOKEN=<paste token here>
+3. Obtain an OpenAIRE Graph refresh token and create a .env file with the following parameters: 
+   ```MG_HOST=
+      MG_PORT=
+      MG_PORT_ALT=
+      ORCID_NAME_SIMILARITY_THRESHOLD=
+      NAME_SIMILARITY_THRESHOLD=
+      OPENAIRE_API="https://api.openaire.eu"
+      OPENAIRE_SERVICE="https://services.openaire.eu"
+      REFRESH_TOKEN=
+   ```
 
 4. Provision Memgraph graph database and set up environment variables
 
@@ -17,11 +23,6 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
 
         $ curl -O https://download.memgraph.com/memgraph/v2.14.1/ubuntu-20.04/memgraph_2.14.1-1_amd64.deb
         $ sudo dpkg -i /memgraph_2.14.1-1_amd64.deb
-
-   Then setup environment variables on the local machine to point to the memgraph VM
-
-        $ export MG_HOST=127.168.0.1
-        $ export MG_PORT=7687
 
 5. Run the backend:
 
