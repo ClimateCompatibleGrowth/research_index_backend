@@ -1,14 +1,29 @@
 import os
+from datetime import datetime
 from json import load
+from typing import Final, Generator
+from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockFixture
 
-from research_index_backend.models import ArticleMetadata, AuthorMetadata
+from research_index_backend.models import AnonymousArticle, AnonymousAuthor
 from research_index_backend.parser import (
     parse_author,
     parse_metadata,
     parse_result_type,
 )
+
+JAN_31: Final[datetime] = datetime(2023, 1, 31, 0, 0, 0)
+
+
+@pytest.fixture
+def datetime_fixture(mocker: MockFixture) -> Generator[MagicMock, None, None]:
+    mocked_datetime = mocker.patch(
+        "research_index_backend.parser.datetime",
+    )
+    mocked_datetime.datetime.today.return_value = JAN_31
+    yield mocked_datetime
 
 
 class TestAuthor:
@@ -18,7 +33,7 @@ class TestAuthor:
     ----
     Dataclass for author metadata has the following fields:
 
-        class AuthorMetadata():
+        class Author():
             orcid: Optional[str]
             last_name: str
             first_name: str
@@ -36,7 +51,12 @@ class TestAuthor:
             "$": "Allington, Lucy",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata("0000-0003-1801-899x", "Allington", "Lucy", 1)
+        expected = AnonymousAuthor(
+            orcid="https://orcid.org/0000-0003-1801-899x",
+            last_name="Allington",
+            first_name="Lucy",
+            rank=1,
+        )
         assert actual == expected
 
     def test_author_orcid(self):
@@ -48,7 +68,12 @@ class TestAuthor:
             "$": "Usher, Will",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata("0000-0001-9367-1791", "Usher", "Will", 5)
+        expected = AnonymousAuthor(
+            orcid="https://orcid.org/0000-0001-9367-1791",
+            last_name="Usher",
+            first_name="Will",
+            rank=5,
+        )
         assert actual == expected
 
     def test_author_no_orcid(self):
@@ -59,7 +84,9 @@ class TestAuthor:
             "$": "Usher, Will",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata(None, "Usher", "Will", 5)
+        expected = AnonymousAuthor(
+            orcid=None, last_name="Usher", first_name="Will", rank=5
+        )
         assert actual == expected
 
     def test_author_orcid_no_name(self):
@@ -70,7 +97,9 @@ class TestAuthor:
             "$": "Usher, Will",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata(None, "Usher", "Will", 5)
+        expected = AnonymousAuthor(
+            orcid=None, last_name="Usher", first_name="Will", rank=5
+        )
         assert actual == expected
 
     def test_author_name_poorly_formed(self):
@@ -81,7 +110,12 @@ class TestAuthor:
             "$": "null Stephanie Hirmer",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata("0000-0001-7628-9259", "Hirmer", "Stephanie", 13)
+        expected = AnonymousAuthor(
+            orcid="https://orcid.org/0000-0001-7628-9259",
+            last_name="Hirmer",
+            first_name="Stephanie",
+            rank=13,
+        )
         assert actual == expected
 
     def test_author_no_name_no_orcid(self):
@@ -98,7 +132,9 @@ class TestAuthor:
             "$": "HABINSHUTI Antoinette",
         }
         actual = parse_author(fixture)
-        expected = AuthorMetadata(None, "Habinshuti", "Antoinette", 1)
+        expected = AnonymousAuthor(
+            orcid=None, last_name="Habinshuti", first_name="Antoinette", rank=1
+        )
         assert actual == expected
 
 
@@ -190,29 +226,29 @@ class TestResearchProduct:
         actual = parse_result_type(fixture)
         assert actual == expected
 
-    def test_parse_metadata(self):
+    def test_parse_metadata(self, datetime_fixture: MagicMock):
         """ """
         file_path = os.path.join("tests", "fixtures", "zenodo.json")
 
         with open(file_path, "r") as json_file:
             json = load(json_file)
-            actual = parse_metadata(json, "test_doi")
+            actual = parse_metadata(json, "10.5281/zenodo.4650794", {})
 
             author = {
                 "rank": 1,
                 "first_name": "Lucy",
                 "last_name": "Allington",
-                "orcid": "0000-0003-1801-899x",
+                "orcid": "https://orcid.org/0000-0003-1801-899x",
             }
 
-            authors = [AuthorMetadata(**author)]
+            authors = [AnonymousAuthor(**author)]
 
             article = {
                 "title": "CCG Starter Data Kit: Liberia",
                 "authors": authors,
-                "doi": "test_doi",
+                "doi": "10.5281/zenodo.4650794",
                 "abstract": "A starter data kit for Liberia",
-                "journal": None,
+                "journal": "",
                 "issue": None,
                 "volume": None,
                 "publication_year": 2023,
@@ -221,8 +257,11 @@ class TestResearchProduct:
                 "publisher": "Zenodo",
                 "result_type": "dataset",
                 "resource_type": None,
+                "cited_by_count_date": datetime(2023, 1, 31, 0, 0, 0),
             }
 
-            expected = [ArticleMetadata(**article)]
+            expected = [AnonymousArticle(**article)]
+
+            print(datetime_fixture.mock_calls)
 
             assert actual == expected

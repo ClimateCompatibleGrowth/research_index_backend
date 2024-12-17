@@ -1,7 +1,12 @@
+import logging
 from functools import wraps
 
-from app.core.config import settings
 from neo4j import GraphDatabase
+
+from ..core.config import settings
+
+neo4j_log = logging.getLogger("neo4j")
+neo4j_log.setLevel(logging.CRITICAL)
 
 MG_HOST = settings.MG_HOST
 MG_PORT = settings.MG_PORT

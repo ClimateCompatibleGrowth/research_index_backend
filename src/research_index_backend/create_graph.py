@@ -11,14 +11,11 @@ from os.path import join
 from typing import Dict
 
 import pandas as pd
-from gqlalchemy import Memgraph, match
-from gqlalchemy.query_builders.memgraph_query_builder import Operator
+from neo4j import Driver
 
-# Import the requirements modules
-from rdflib import Graph, Literal, Namespace, URIRef
-from rdflib.namespace import ORG, OWL, RDF, SDO, SKOS
-
+from .db.session import connect_to_db
 from .models import (
+    AnonymousAuthor,
     Article,
     Author,
     Country,
@@ -28,11 +25,7 @@ from .models import (
     member_of,
     unit_of,
 )
-
-CCG = Namespace("http://127.0.0.1:5001/")
-DOI = Namespace("http://doi.org/")
-DBR = Namespace("http://dbpedia.org/resource/")
-DBP = Namespace("http://dbpedia.org/")
+from .utils import split_names
 
 
 class GraphAbstract(ABC):
@@ -83,189 +76,9 @@ class GraphAbstract(ABC):
         raise NotImplementedError()
 
 
-class GraphRDF(GraphAbstract):
-    def __init__(self) -> None:
-        self.g = Graph()
-        # Bind prefix to namespace to make it more readable
-        self.g.bind("schema", SDO)
-        self.g.bind("rdf", RDF)
-        self.g.bind("owl", OWL)
-        self.g.bind("skos", SKOS)
-        self.g.bind("org", ORG)
-        self.g.bind("dbp", DBP)
-        PROJECT = URIRef(CCG)
-        self.g.add((PROJECT, RDF.type, ORG.OrganizationalCollaboration))
-        self.g.add(
-            (PROJECT, SKOS.prefLabel, Literal("Climate Compatible Growth"))
-        )
-        for oa in ["oa1", "oa2", "oa3"]:
-            self.g.add((PROJECT, ORG.hasUnit, CCG[f"unit/{oa}"]))
-            self.g.add((CCG[f"unit/{oa}"], ORG.unitOf, PROJECT))
-
-    def add_countries(self, df):
-        def add_country(row):
-            words = str(row["name"]).split(" ")
-            dbpedia = "_".join(words)
-            print(dbpedia)
-            self.g.add((DBR[dbpedia], RDF.type, DBP.Country))
-
-        df.apply(add_country, axis=1)
-
-    def add_work_streams(self, df) -> None:
-        """Add work_streams to the graph
-
-        Turtle should look as::
-
-            <http://climatecompatiblegrowth.com>
-            org:hasUnit <http://climatecompatiblegrowth.com/unit/ws1> .
-
-            <http://climatecompatiblegrowth.com/unit/ws1>
-            rdf:type org:OrganizationalUnit ;
-            skos:prefLabel "Workstream 1: National Parterships" ;
-            org:unitOf <http://climatecompatiblegrowth.com> .
-
-        """
-
-        def add_work_stream(row):
-            WS = CCG[f"unit/{row['id']}"]
-            self.g.add((WS, RDF.type, ORG.OrganizationalUnit))
-            self.g.add((WS, SKOS.prefLabel, Literal(row["name"])))
-
-        df.apply(add_work_stream, axis=1)
-
-    def add_authors(self, df):
-        """Add authors to the graph"""
-
-        def add_author(row):
-            """Adds the list of authors"""
-
-            def add_author_details(author_id: URIRef, row: pd.DataFrame):
-                self.g.add((author_id, RDF.type, SDO.Person))
-                self.g.add(
-                    (author_id, SDO.givenName, Literal(row["First Name"]))
-                )
-                self.g.add(
-                    (author_id, SDO.familyName, Literal(row["Last Name"]))
-                )
-                self.g.add(
-                    (
-                        author_id,
-                        SDO.name,
-                        Literal(row["First Name"] + " " + row["Last Name"]),
-                    )
-                )
-                if not pd.isna(row["gender"]):
-                    if row["gender"] == "male":
-                        self.g.add([author_id, SDO.gender, SDO.Male])
-                    elif row["gender"] == "female":
-                        self.g.add([author_id, SDO.gender, SDO.Female])
-
-            author_id = CCG[f"authors/{row['uuid']}"]
-            add_author_details(author_id, row)
-
-        df.apply(add_author, axis=1)
-
-    def add_papers(self, df):
-        """Add papers to the graph"""
-
-        def add_paper(row):
-            """Adds the list of papers"""
-            PAPER = CCG[f"outputs/{row['paper_uuid']}"]
-            self.g.add((PAPER, RDF.type, SDO.ScholarlyArticle))
-            self.g.add((PAPER, SDO.abstract, Literal(row["Abstract"])))
-            if "title" in row.keys():
-                self.g.add((PAPER, SDO.title, Literal(row["title"])))
-            if "license" in row.keys():
-                if row["license"]:
-                    self.g.add((PAPER, SDO.license, Literal(row["license"])))
-
-        df.apply(add_paper, axis=1)
-
-    def add_partners(self, df):
-        def add_partner(row):
-            """Adds consortium partner
-
-            Turtle should look like this::
-
-                <http://climatecompatiblegrowth.com/unit/oxford>
-                rdf:type org:Organization ;
-                org:memberOf <http://climatecompatiblegrowth.com>;
-                rdf:sameAs dbr:University_of_Oxford ;
-                skos:prefLabel "University of Oxford" .
-
-            """
-            PARTNER = CCG[f"unit/{row['id']}"]
-            ORGANISATION = URIRef(CCG)
-            self.g.add((PARTNER, RDF.type, ORG.Organization))
-            self.g.add((PARTNER, ORG.memberOf, ORGANISATION))
-            if not pd.isna(row["dbpedia"]):
-                self.g.add((PARTNER, OWL.sameAs, DBR[row["dbpedia"]]))
-            self.g.add((PARTNER, SKOS.prefLabel, Literal(row["name"])))
-
-        df.apply(add_partner, axis=1)
-
-    def add_sub_work_streams(self, df):
-        """Add subwork_streams to the graph"""
-
-        def add_ws_structure(row):
-            """Add workstream structure to graph"""
-            PARENT = CCG[f"unit/{row['parent']}"]
-            CHILD = CCG[f"unit/{row['child']}"]
-            self.g.add((PARENT, ORG.hasUnit, CHILD))
-            self.g.add((CHILD, ORG.unitOf, PARENT))
-
-        df.apply(add_ws_structure, axis=1)
-
-    def add_work_package_members(self, df):
-        """Add work package members"""
-
-        def add_work_package_member(row):
-            """Adds work package members"""
-            WS = CCG[f"unit/{row['id']}"]
-            if pd.isna(row["orcid"]):
-                pass
-            else:
-                self.g.add((WS, ORG.hasMember, URIRef(row["orcid"])))
-                self.g.add((URIRef(row["orcid"]), ORG.memberOf, WS))
-
-        df.apply(add_work_package_member, axis=1)
-
-    def add_affiliations(self, df):
-        """Adds affiliations"""
-
-        def add_affiliation(row):
-            """Adds affiliations
-
-            Notes
-            -----
-            Relationship between a consortium partner and an author
-            """
-            PARTNER = CCG[f"unit/{row['id']}"]
-            if pd.isna(row["orcid"]):
-                pass
-            else:
-                self.g.add((PARTNER, ORG.hasMember, URIRef(row["orcid"])))
-                self.g.add((URIRef(row["orcid"]), ORG.memberOf, PARTNER))
-
-        df.apply(add_affiliation, axis=1)
-
-    def add_authorship_relation(self, df):
-        def add_authorship_relation(row):
-            """Adds the authorship links between author and paper"""
-            PAPER = CCG[f"outputs/{row['paper_uuid']}"]
-            AUTHOR = CCG[f"authors/{row['uuid']}"]
-            self.g.add((PAPER, SDO.author, AUTHOR))
-
-        df.apply(add_authorship_relation, axis=1)
-
-    def add_country_relations(self):
-        pass
-
-
 class GraphMemGraph(GraphAbstract):
-    def __init__(self, graph: Memgraph) -> None:
+    def __init__(self) -> None:
 
-        self.g = graph
         self.authors: Dict[str, Author] = {}
         self.outputs: Dict[str, Article] = {}
         self.work_streams: Dict[str, Workstream] = {}
@@ -279,14 +92,14 @@ class GraphMemGraph(GraphAbstract):
                     uuid=row["uuid"],
                     first_name=row["first_name"],
                     last_name=row["last_name"],
-                ).save(self.g)
+                ).save()
             else:
                 self.authors[row["uuid"]] = Author(
                     uuid=row["uuid"],
                     first_name=row["first_name"],
                     last_name=row["last_name"],
                     orcid=row["Orcid"],
-                ).save(self.g)
+                ).save()
 
         df.apply(add_author, axis=1)
 
@@ -305,7 +118,7 @@ class GraphMemGraph(GraphAbstract):
                 latitude=lat,
                 longitude=lon,
             )
-            self.countries[row["name.common"]] = country.save(self.g)
+            self.countries[row["name.common"]] = country.save()
 
         df.apply(add_country, axis=1)
 
@@ -317,7 +130,7 @@ class GraphMemGraph(GraphAbstract):
                 doi=row["DOI"],
                 title=row["title"],
                 abstract=row["Abstract"],
-            ).save(self.g)
+            ).save()
 
         df.apply(add_paper, axis=1)
 
@@ -326,13 +139,13 @@ class GraphMemGraph(GraphAbstract):
             author_uuid = row["uuid"]
             paper_uuid = row["paper_uuid"]
 
-            loaded_author = Author(uuid=author_uuid).load(db=self.g)
-            loaded_output = Article(uuid=paper_uuid).load(db=self.g)
+            loaded_author = Author(uuid=author_uuid).load()
+            loaded_output = Article(uuid=paper_uuid).load()
 
             author_of(
                 _start_node_id=loaded_author._id,
                 _end_node_id=loaded_output._id,
-            ).save(self.g)
+            ).save()
 
         df.apply(add_authorship, axis=1)
 
@@ -342,7 +155,7 @@ class GraphMemGraph(GraphAbstract):
         def add_work_stream(row):
             self.work_streams[row["id"]] = Workstream(
                 id=row["id"], name=row["name"]
-            ).save(self.g)
+            ).save()
 
         df.apply(add_work_stream, axis=1)
 
@@ -351,12 +164,7 @@ class GraphMemGraph(GraphAbstract):
 
         def add_ws_structure(row):
             """Add work-stream structure to graph"""
-            parent = Workstream(id=row["parent"]).load(self.g)
-            child = Workstream(id=row["child"]).load(self.g)
-
-            unit_of(_start_node_id=child._id, _end_node_id=parent._id).save(
-                self.g
-            )
+            unit_of().save(child=row["child"], parent=row["parent"])
 
         df.apply(add_ws_structure, axis=1)
 
@@ -365,38 +173,25 @@ class GraphMemGraph(GraphAbstract):
 
         def add_work_package_member(row):
             """Adds work package members"""
-            ws = Workstream(id=row["id"]).load(self.g)
 
             if pd.isna(row["orcid"]):
-                results = list(
-                    match()
-                    .node(labels="Author", variable="a")
-                    .where(
-                        item="a.first_name + ' ' + a.last_name",
-                        operator=Operator.EQUAL,
-                        literal=row["name"],
-                    )
-                    .return_(results=[("a.uuid", "uuid")])
-                    .execute()
+                first_name, last_name = split_names(row["name"])
+                author = AnonymousAuthor(
+                    first_name=first_name, last_name=last_name
                 )
+                author_uuid = author.match_name()
             else:
-                results = list(
-                    match()
-                    .node(labels="Author", variable="a")
-                    .where(
-                        item="a.orcid",
-                        operator=Operator.EQUAL,
-                        literal=row["orcid"],
-                    )
-                    .return_([("a.uuid", "uuid")])
-                    .execute()
+                first_name, last_name = split_names(row["name"])
+                author = AnonymousAuthor(
+                    first_name=first_name,
+                    last_name=last_name,
+                    orcid=row["orcid"],
                 )
+                author_uuid = author.match_orcid()
 
-            if results:
-                author = Author(uuid=results[0]["uuid"]).load(self.g)
-                member_of(_start_node_id=author._id, _end_node_id=ws._id).save(
-                    self.g
-                )
+            if author_uuid:
+                relation = member_of()
+                relation.save(uuid=author_uuid, id=row["id"])
             else:
                 print(f"Could not find {row['name']} in the database")
 
@@ -407,8 +202,12 @@ class GraphMemGraph(GraphAbstract):
             """Adds consortium partner"""
             id = row["id"]
             self.partners[id] = Partner(
-                id=id, name=row["name"], dbpedia=row["dbpedia"]
-            ).save(self.g)
+                id=id,
+                name=row["name"],
+                dbpedia=str(row.get("dbpedia", None)),
+                ror=str(row.get("ror", None)),
+                openalex=str(row.get("openalex", None)),
+            ).save()
 
         df.apply(add_partner, axis=1)
 
@@ -422,106 +221,60 @@ class GraphMemGraph(GraphAbstract):
             -----
             Relationship between a consortium partner and an author
             """
-            partner = Partner(id=row["id"]).load(self.g)
-            results = None
             if pd.isna(row["orcid"]):
-                results = list(
-                    match()
-                    .node(labels="Author", variable="a")
-                    .where(
-                        item="a.first_name + ' ' + a.last_name",
-                        operator=Operator.EQUAL,
-                        literal=row["name"],
-                    )
-                    .return_(results=[("a.uuid", "uuid")])
-                    .execute()
+                first_name, last_name = split_names(row["name"])
+                author = AnonymousAuthor(
+                    first_name=first_name, last_name=last_name
                 )
+                results = author.match_name()
             else:
-                results = list(
-                    match()
-                    .node(labels="Author", variable="a")
-                    .where(
-                        item="a.orcid",
-                        operator=Operator.EQUAL,
-                        literal=row["orcid"],
-                    )
-                    .return_(results=[("a.uuid", "uuid")])
-                    .execute()
+                first_name, last_name = split_names(row["name"])
+                author = AnonymousAuthor(
+                    first_name=first_name,
+                    last_name=last_name,
+                    orcid=row["orcid"],
                 )
+                results = author.match_orcid()
+
             if results:
-                author = Author(uuid=results[0]["uuid"]).load(self.g)
-                member_of(
-                    _start_node_id=author._id, _end_node_id=partner._id
-                ).save(self.g)
+                member_of().save(uuid=results, id=row["id"])
 
         df.apply(add_affiliation, axis=1)
 
-    def add_country_relations(self):
+    @connect_to_db
+    def add_country_relations(self, db: Driver):
         query = """
             MATCH (c:Country)
             CALL {
             WITH c
             MATCH (o:Output)
             WHERE o.abstract CONTAINS c.name
-            AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
-            CREATE (o)-[r:REFERS_TO]->(c)
+            AND NOT exists((o:Output)-[:refers_to]->(c:Country))
+            CREATE (o)-[r:refers_to]->(c)
             RETURN r
             }
             RETURN r
             """
-        self.g.execute(query)
+        db.execute_query(query)
 
-    def create_constraints(self):
+    @connect_to_db
+    def create_constraints(self, db: Driver):
         query = [
             "CREATE CONSTRAINT ON (n:Output) ASSERT n.doi IS UNIQUE;",
             "CREATE CONSTRAINT ON (n:Output) ASSERT n.uuid IS UNIQUE;",
             "CREATE CONSTRAINT ON (a:Author) ASSERT a.uuid IS UNIQUE;",
             "CREATE CONSTRAINT ON (a:Author) ASSERT a.orcid IS UNIQUE;",
+            "CREATE INDEX ON :Author(uuid);",
+            "CREATE INDEX ON :Output(uuid);",
+            "CREATE INDEX ON :Country(id);",
+            "CREATE INDEX ON :Output(result_type);",
         ]
         for q in query:
-            self.g.execute(q)
+            with db.session() as session:
+                session.run(q)
 
 
-def main(graph: GraphMemGraph):
-    """Create the graph of authors and papers"""
-    work_streams = pd.read_excel(
-        "project_partners.xlsx", sheet_name="workstream"
-    )
-    graph.add_work_streams(work_streams)
-
-    structure = pd.read_excel("project_partners.xlsx", sheet_name="subws")
-    graph.add_sub_work_streams(structure)
-
-    df = pd.read_excel("project_partners.xlsx", sheet_name="partners")
-    graph.add_partners(df)
-
-    authors = pd.read_csv("data/authors.csv")
-    graph.add_authors(authors)
-
-    work_package_members = pd.read_excel(
-        "project_partners.xlsx", sheet_name="wp_members"
-    )
-    graph.add_work_package_members(work_package_members)
-
-    papers = pd.read_csv("data/papers.csv")
-    graph.add_papers(papers)
-
-    relations = pd.read_csv("data/relations.csv")
-    graph.add_authorship_relation(relations)
-
-    df = pd.read_excel("project_partners.xlsx", sheet_name="org_members")
-    graph.add_affiliations(df)
-
-    df = pd.read_csv("data/countries.csv", quotechar='"')
-    graph.add_countries(df)
-
-    graph.add_country_relations()
-    graph.create_constraints()
-
-    return graph.g
-
-
-def load_initial_data(graph: Memgraph, file_path: str):
+def load_initial_data(file_path: str):
     """Loads initial data from ``file_path``
 
     Expects csv files:
@@ -534,7 +287,7 @@ def load_initial_data(graph: Memgraph, file_path: str):
     - countries.csv
     """
 
-    memgraph = GraphMemGraph(graph)
+    memgraph = GraphMemGraph()
 
     work_streams = pd.read_csv(join(file_path, "workstream.csv"))
     memgraph.add_work_streams(work_streams)
