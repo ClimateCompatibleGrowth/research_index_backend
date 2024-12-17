@@ -2,13 +2,13 @@ from datetime import datetime
 from logging import getLogger
 from typing import Dict, List
 
-from .models import ArticleMetadata, AuthorMetadata
+from .models import AnonymousArticle, AnonymousAuthor
 from .utils import clean_html
 
 logger = getLogger(__name__)
 
 
-def parse_author(metadata: Dict) -> AuthorMetadata | None:
+def parse_author(metadata: Dict) -> AnonymousAuthor | None:
     """Parses the JSON for an author
 
     Arguments
@@ -58,7 +58,12 @@ def parse_author(metadata: Dict) -> AuthorMetadata | None:
         f"Creating author metadata: {first_name} {last_name} {orcid} {rank}"
     )
     if first_name and last_name:
-        return AuthorMetadata(orcid, last_name, first_name, rank)
+        return AnonymousAuthor(
+            first_name=first_name,
+            last_name=last_name,
+            orcid=f"https://orcid.org/{orcid}" if orcid else None,
+            rank=rank,
+        )
     else:
         return None
 
@@ -84,7 +89,7 @@ def parse_result_type(metadata: Dict) -> str:
 
 def parse_metadata(
     metadata: Dict, valid_doi: str, openalex_metadata: Dict
-) -> List[ArticleMetadata]:
+) -> List[AnonymousArticle]:
     """Parses the response from the OpenAire Graph API
 
     Notes
@@ -121,15 +126,15 @@ def parse_metadata(
         else:
             publisher = None
 
-        journal_meta = entity.get("journal", None)
+        journal_meta = entity.get("journal", "")
         if journal_meta:
-            journal = journal_meta.get("$", None)
+            journal = journal_meta.get("$", "")
             if journal:
                 journal = clean_html(journal)
             else:
                 logger.debug(f"Journal not empty: {journal_meta}")
         else:
-            journal = None
+            journal = ""
 
         abstract = entity.get("description", None)
         if abstract:
@@ -140,7 +145,7 @@ def parse_metadata(
 
         authors = entity.get("creator", None)
 
-        all_authors: List[AuthorMetadata] = []
+        all_authors: List[AnonymousAuthor] = []
         if isinstance(authors, list):
             for x in authors:
                 author = parse_author(x)
@@ -185,24 +190,24 @@ def parse_metadata(
                 publication_month = int(date_parts[1])
                 publication_day = int(date_parts[-1])
 
-        article_object = ArticleMetadata(
-            doi,
-            clean_html(title),
-            abstract,
-            all_authors,
-            journal,
-            issue,
-            volume,
-            publication_year,
-            publication_month,
-            publication_day,
-            publisher,
-            result_type,
-            resource_type,
-            openalex_metadata.get("id"),
-            openalex_metadata.get("cited_by_count"),
-            datetime.today(),
-            None,
+        article_object = AnonymousArticle(
+            doi=doi,
+            title=clean_html(title),
+            abstract=abstract,
+            authors=all_authors,
+            journal=journal,
+            issue=issue,
+            volume=volume,
+            publication_year=publication_year,
+            publication_month=publication_month,
+            publication_day=publication_day,
+            publisher=publisher,
+            result_type=result_type,
+            resource_type=resource_type,
+            openalex=openalex_metadata.get("id"),
+            cited_by_count=openalex_metadata.get("cited_by_count"),
+            cited_by_count_date=datetime.today(),
+            counts_by_year=None,
         )
         articles_metadata.append(article_object)
 

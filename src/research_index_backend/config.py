@@ -11,7 +11,7 @@ class Config:
     def __init__(self):
         load_dotenv()
 
-        self.mg_host: str = os.getenv("MG_HOST",)
+        self.mg_host: str = str(os.getenv("MG_HOST", None))
         self.mg_port: int = int(os.getenv("MG_PORT"))
         self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT"))
 
