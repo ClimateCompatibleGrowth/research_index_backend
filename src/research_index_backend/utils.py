@@ -14,6 +14,9 @@ def clean_html(raw_html):
         .replace("�", " ")
         .replace("&amp;", "&")
         .replace("\u202f", " ")
+        .replace("    ", " ")
+        .replace("   ", " ")
+        .replace("  ", " ")
     )
     return unescape(normalize("NFC", cleantext))
 
