@@ -15,7 +15,7 @@ from neo4j import Driver
 from neo4j.exceptions import ClientError
 from pydantic import UUID4, BaseModel, Field, HttpUrl
 
-from .db.session import connect_to_db
+from research_index_backend.session import connect_to_db
 
 logger = getLogger(__name__)
 basicConfig(

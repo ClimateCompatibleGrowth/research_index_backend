@@ -3,13 +3,13 @@ from functools import wraps
 
 from neo4j import GraphDatabase
 
-from ..core.config import settings
+from .config import config
 
 neo4j_log = logging.getLogger("neo4j")
 neo4j_log.setLevel(logging.CRITICAL)
 
-MG_HOST = settings.MG_HOST
-MG_PORT = settings.MG_PORT
+MG_HOST = config.mg_host
+MG_PORT = config.mg_port
 
 
 def connect_to_db(f):

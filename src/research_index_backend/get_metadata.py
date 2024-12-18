@@ -1,15 +1,11 @@
 from json import JSONDecodeError, dump
 from logging import DEBUG, basicConfig, getLogger
-from os import environ, makedirs
+from os import makedirs
 
 import requests
 import requests_cache
 
-OPENAIRE_API = "https://api.openaire.eu"
-OPENAIRE_SERVICE = "https://services.openaire.eu"
-OPENAIRE_TOKEN = (
-    f"{OPENAIRE_SERVICE}/uoa-user-management/api/users/getAccessToken"
-)
+from .config import config
 
 logger = getLogger(__name__)
 basicConfig(
@@ -35,7 +31,7 @@ def get_metadata_from_openaire(
     """
     query = f"?format=json&doi={doi}"
     headers = {"Authorization": f"Bearer {token}"}
-    api_url = f"{OPENAIRE_API}/search/researchProducts"
+    api_url = f"{config.openaire_api}/search/researchProducts"
 
     response = session.get(api_url + query, headers=headers)
 
@@ -48,7 +44,7 @@ def get_metadata_from_openaire(
     clean_doi = doi.replace("/", "")
     directory = "data/json/openaire"
     makedirs(directory, exist_ok=True)
-    
+
     with open(f"data/json/openaire/{clean_doi}.json", "w") as json_file:
         try:
             dump(response.json(), json_file)
@@ -77,7 +73,7 @@ def get_metadata_from_openalex(session, doi):
     api_url = "https://api.openalex.org/works/"
     response = session.get(api_url + query)
     directory = "data/json/openalex"
-    makedirs(directory, exist_ok=True)        
+    makedirs(directory, exist_ok=True)
     try:
         response.raise_for_status()
         clean_doi = doi.replace("/", "")

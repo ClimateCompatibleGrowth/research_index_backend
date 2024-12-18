@@ -28,13 +28,13 @@ from tqdm import tqdm
 
 from .config import config
 from .create_graph import load_initial_data
-from .db.session import connect_to_db
 from .get_metadata import (
     get_metadata_from_openaire,
     get_metadata_from_openalex,
 )
 from .models import AnonymousArticle, Article, Author
 from .parser import parse_metadata
+from .session import connect_to_db
 
 TOKEN = config.token
 

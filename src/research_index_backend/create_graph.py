@@ -13,7 +13,6 @@ from typing import Dict
 import pandas as pd
 from neo4j import Driver
 
-from .db.session import connect_to_db
 from .models import (
     AnonymousAuthor,
     Article,
@@ -25,6 +24,7 @@ from .models import (
     member_of,
     unit_of,
 )
+from .session import connect_to_db
 from .utils import split_names
 
 
