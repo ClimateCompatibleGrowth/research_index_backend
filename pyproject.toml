@@ -18,10 +18,13 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["tqdm", "gqlalchemy", "pandas", "rdflib", "requests", "requests_cache", "python-dotenv"]
+dependencies = ["tqdm", "pandas", "rdflib", "requests",
+                "requests_cache", "python-dotenv", "neo4j",
+                "pydantic"]
 
 [project.urls]
 Documentation = "https://github.com/ClimateCompatibleGrowth/research_index_backend#readme"
@@ -37,8 +40,8 @@ research_index = "research_index_backend:entry_point"
 [tool.hatch.envs.default]
 dependencies = [
   "coverage[toml]>=6.5",
-  "pytest",
-]
+  "pytest"]
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
