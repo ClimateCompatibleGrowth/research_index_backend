@@ -21,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["tqdm", "gqlalchemy", "pandas", "rdflib", "requests", "requests_cache"]
+dependencies = ["tqdm", "gqlalchemy", "pandas", "rdflib", "requests", "requests_cache", "dotenv"]
 
 [project.urls]
 Documentation = "https://github.com/ClimateCompatibleGrowth/research_index_backend#readme"
