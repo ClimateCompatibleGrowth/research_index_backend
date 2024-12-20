@@ -179,11 +179,13 @@ def check_upload_author(db: Driver, author: Dict) -> Author:
                        a.first_name as first_name,
                        a.list_name as list_name
                 """
-        results, _, _ = db.execute_query(query, orcid=orcid_url)
+        results, _, _ = db.execute_query(
+            query, orcid=orcid_url
+        )  # typing: tuple[neo4j.Result, Any, Any]
 
     # Check that the ORCID name actually matches the author name
     # (is the ORCID correct?)
-    if results.data():
+    if results:
         error_message = (
             f"Result from ORCID {author['orcid']} does not match author name: "
             + f"{author['first_name']} {author['last_name']}"

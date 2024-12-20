@@ -206,7 +206,7 @@ def parse_metadata(
             resource_type=resource_type,
             openalex=openalex_metadata.get("id"),
             cited_by_count=openalex_metadata.get("cited_by_count"),
-            cited_by_count_date=datetime.today(),
+            cited_by_count_date=datetime.now().year,
             counts_by_year=None,
         )
         articles_metadata.append(article_object)

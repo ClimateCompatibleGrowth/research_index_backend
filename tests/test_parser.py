@@ -1,11 +1,8 @@
 import os
 from datetime import datetime
 from json import load
-from typing import Final, Generator
-from unittest.mock import MagicMock
 
 import pytest
-from pytest_mock import MockFixture
 
 from research_index_backend.models import AnonymousArticle, AnonymousAuthor
 from research_index_backend.parser import (
@@ -13,17 +10,6 @@ from research_index_backend.parser import (
     parse_metadata,
     parse_result_type,
 )
-
-JAN_31: Final[datetime] = datetime(2023, 1, 31, 0, 0, 0)
-
-
-@pytest.fixture
-def datetime_fixture(mocker: MockFixture) -> Generator[MagicMock, None, None]:
-    mocked_datetime = mocker.patch(
-        "research_index_backend.parser.datetime",
-    )
-    mocked_datetime.datetime.today.return_value = JAN_31
-    yield mocked_datetime
 
 
 class TestAuthor:
@@ -226,7 +212,7 @@ class TestResearchProduct:
         actual = parse_result_type(fixture)
         assert actual == expected
 
-    def test_parse_metadata(self, datetime_fixture: MagicMock):
+    def test_parse_metadata(self):
         """ """
         file_path = os.path.join("tests", "fixtures", "zenodo.json")
 
@@ -257,11 +243,9 @@ class TestResearchProduct:
                 "publisher": "Zenodo",
                 "result_type": "dataset",
                 "resource_type": None,
-                "cited_by_count_date": datetime(2023, 1, 31, 0, 0, 0),
+                "cited_by_count_date": datetime.now().year,
             }
 
             expected = [AnonymousArticle(**article)]
-
-            print(datetime_fixture.mock_calls)
 
             assert actual == expected
