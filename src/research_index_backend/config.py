@@ -29,8 +29,7 @@ class Config:
             "OPENAIRE_SERVICE", "https://services.openaire.eu"
         )
 
-        self.openaire_token_endpoint = \
-            f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
+        self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
         self.refresh_token: str = os.getenv("REFRESH_TOKEN")
         self.token = self._get_personal_token()
 
@@ -53,8 +52,15 @@ class Config:
             query = f"?refreshToken={refresh_token}"
             response = requests.get(self.openaire_token_endpoint + query)
             logger.info(f"Status code: {response.status_code}")
-            logger.debug(response.json())
-            return response.json()["access_token"]
+            try:
+                response_json = response.json()
+                logger.debug(response_json)
+                return response_json["access_token"]
+            except requests.JSONDecodeError as e:
+                logger.error(f"Error decoding JSON response: {e}")
+                raise ValueError(
+                    "Failed to obtain personal token due to JSON decode error"
+                )
         else:
             raise ValueError(
                 "No refresh token found, could not obtain personal token"
