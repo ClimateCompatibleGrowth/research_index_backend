@@ -29,4 +29,5 @@ jobs:
       env:
         MG_HOST: ${{ secrets.MG_HOST }}
         MG_PORT: ${{ secrets.MG_PORT }}
+        MG_PORT_ALT: ${{ secrets.MG_PORT_ALT }}
       run: hatch run cov
