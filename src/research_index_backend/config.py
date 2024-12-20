@@ -11,15 +11,15 @@ class Config:
     def __init__(self):
         load_dotenv()
 
-        self.mg_host: str = str(os.getenv("MG_HOST", None))
-        self.mg_port: int = int(os.getenv("MG_PORT"))
-        self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT"))
+        self.mg_host: str = os.getenv("MG_HOST", "127.0.0.1")
+        self.mg_port: int = int(os.getenv("MG_PORT", 7687))
+        self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT", 7444))
 
         self.orcid_name_similarity_threshold: float = float(
-            os.getenv("ORCID_NAME_SIMILARITY_THRESHOLD")
+            os.getenv("ORCID_NAME_SIMILARITY_THRESHOLD", 0.8)
         )
         self.name_similarity_threshold: float = float(
-            os.getenv("NAME_SIMILARITY_THRESHOLD")
+            os.getenv("NAME_SIMILARITY_THRESHOLD", 0.8)
         )
 
         self.openaire_api: str = os.getenv(
@@ -30,8 +30,20 @@ class Config:
         )
 
         self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
-        self.refresh_token: str = os.getenv("REFRESH_TOKEN")
-        self.token = self._get_personal_token()
+        self.refresh_token: str = ""
+        self.token = None
+
+        @property
+        def refresh_token(self):
+            return os.getenv("REFRESH_TOKEN", None)
+
+        @property
+        def token(self):
+            if self.token:
+                return self.token
+            else:
+                self.token = self._get_personal_token()
+                return self.token
 
         self._validate()
 
@@ -52,8 +64,15 @@ class Config:
             query = f"?refreshToken={refresh_token}"
             response = requests.get(self.openaire_token_endpoint + query)
             logger.info(f"Status code: {response.status_code}")
-            logger.debug(response.json())
-            return response.json()["access_token"]
+            try:
+                response_json = response.json()
+                logger.debug(response_json)
+                return response_json["access_token"]
+            except requests.JSONDecodeError as e:
+                logger.error(f"Error decoding JSON response: {e}")
+                raise ValueError(
+                    "Failed to obtain personal token due to JSON decode error"
+                )
         else:
             raise ValueError(
                 "No refresh token found, could not obtain personal token"
