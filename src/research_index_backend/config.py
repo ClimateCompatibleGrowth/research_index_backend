@@ -11,15 +11,15 @@ class Config:
     def __init__(self):
         load_dotenv()
 
-        self.mg_host: str = os.getenv("MG_HOST",)
-        self.mg_port: int = int(os.getenv("MG_PORT"))
-        self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT"))
+        self.mg_host: str = os.getenv("MG_HOST", "127.0.0.1")
+        self.mg_port: int = int(os.getenv("MG_PORT", 7687))
+        self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT", 7444))
 
         self.orcid_name_similarity_threshold: float = float(
-            os.getenv("ORCID_NAME_SIMILARITY_THRESHOLD")
+            os.getenv("ORCID_NAME_SIMILARITY_THRESHOLD", 0.8)
         )
         self.name_similarity_threshold: float = float(
-            os.getenv("NAME_SIMILARITY_THRESHOLD")
+            os.getenv("NAME_SIMILARITY_THRESHOLD", 0.8)
         )
 
         self.openaire_api: str = os.getenv(
@@ -29,7 +29,8 @@ class Config:
             "OPENAIRE_SERVICE", "https://services.openaire.eu"
         )
 
-        self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
+        self.openaire_token_endpoint = \
+            f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
         self.refresh_token: str = os.getenv("REFRESH_TOKEN")
         self.token = self._get_personal_token()
 
