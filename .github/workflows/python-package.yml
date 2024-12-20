@@ -26,4 +26,7 @@ jobs:
         python -m pip install hatch
 
     - name: Tests
+      env:
+        MG_HOST: ${{ secrets.MG_HOST }}
+        MG_PORT: ${{ secrets.MG_PORT }}
       run: hatch run cov
