@@ -30,8 +30,20 @@ class Config:
         )
 
         self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
-        self.refresh_token: str = os.getenv("REFRESH_TOKEN")
-        self.token = self._get_personal_token()
+        self.refresh_token: str = ""
+        self.token = None
+
+        @property
+        def refresh_token(self):
+            return os.getenv("REFRESH_TOKEN", None)
+
+        @property
+        def token(self):
+            if self.token:
+                return self.token
+            else:
+                self.token = self._get_personal_token()
+                return self.token
 
         self._validate()
 
