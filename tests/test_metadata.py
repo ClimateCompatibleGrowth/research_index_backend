@@ -14,6 +14,7 @@ from research_index_backend.create_graph_from_doi import (
 )
 
 
+@pytest.mark.skip(reason="Requires access to OpenAire Graph API")
 def test_broken_doi():
     """An incorrect DOI should raise an error"""
     s = CachedSession()
