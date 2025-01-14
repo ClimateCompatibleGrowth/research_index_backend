@@ -14,30 +14,27 @@
 
 import argparse
 from collections import defaultdict
-from dataclasses import asdict
 from difflib import SequenceMatcher
 from logging import DEBUG, basicConfig, getLogger
-from os import environ
 from os.path import join
 from re import IGNORECASE, compile
 from typing import Dict, List
 from uuid import uuid4
 
-import requests
 import requests_cache
-from gqlalchemy import Memgraph, match
-from gqlalchemy.query_builders.memgraph_query_builder import Operator
-from mgclient import DatabaseError
+from neo4j import Driver
+from neo4j.exceptions import DatabaseError
 from tqdm import tqdm
 
+from .config import config
 from .create_graph import load_initial_data
 from .get_metadata import (
     get_metadata_from_openaire,
     get_metadata_from_openalex,
 )
-from .models import Article, ArticleMetadata, Author, author_of
+from .models import AnonymousArticle, Article, Author
 from .parser import parse_metadata
-from .config import config
+from .session import connect_to_db
 
 TOKEN = config.token
 
@@ -103,19 +100,19 @@ def get_output_metadata(
         raise ValueError("Incorrect argument for output metadata source")
 
 
-def match_author_name(author: Dict) -> List:
+@connect_to_db
+def match_author_name(db: Driver, author: Dict) -> List:
     name = f"{author['first_name'][0]} {author['last_name']}"
-    return list(
-        match()
-        .node(labels="Author", variable="a")
-        .where(
-            item="left(a.first_name, 1) + ' ' + a.last_name",
-            operator=Operator.EQUAL,
-            literal=name,
-        )
-        .return_(results=[("a.uuid", "uuid")])
-        .execute()
-    )
+
+    query = """
+            MATCH (a:Author)
+            WHERE left(a.first_name, 1) + ' ' + a.last_name = $name
+            RETURN a.uuid as uuid
+            """
+
+    results, summary, keys = db.execute_query(query, name=name)
+
+    return results.data()
 
 
 def score_name_similarity(name_results: str, name_author: str) -> float:
@@ -154,40 +151,37 @@ def score_name_similarity(name_results: str, name_author: str) -> float:
         return (ratio_a + ratio_b) / 2.0
 
 
-def check_upload_author(author: Dict, graph: Memgraph) -> Author:
+@connect_to_db
+def check_upload_author(db: Driver, author: Dict) -> Author:
     """Checks is an author exists, and creates if not
 
     A new author is created with a new uuid4 identifier
 
     Arguments
     ---------
+    db: neo4j.Driver
+        A graph database connection
     author: Author
         A node object representing an author
-    graph: Memgraph
-        Connection to a Memgraph instance
+
     """
     results = None
 
     orcid = author.get("orcid", None)
+    orcid_url = "https://orcid.org/{orcid}"
     if orcid:
         # Match the ORCID (preferred)
-        results = list(
-            match()
-            .node(labels="Author", variable="a")
-            .where(
-                item="a.orcid",
-                operator=Operator.EQUAL,
-                literal=f"https://orcid.org/{author['orcid']}",
-            )
-            .return_(
-                [
-                    ("a.uuid", "uuid"),
-                    ("a.first_name", "first_name"),
-                    ("a.last_name", "last_name"),
-                ]
-            )
-            .execute()
-        )
+
+        query = """
+                MATCH (a:Author)
+                WHERE a.orcid = $orcid
+                RETURN a.uuid as uuid,
+                       a.first_name as first_name,
+                       a.list_name as list_name
+                """
+        results, _, _ = db.execute_query(
+            query, orcid=orcid_url
+        )  # typing: tuple[neo4j.Result, Any, Any]
 
     # Check that the ORCID name actually matches the author name
     # (is the ORCID correct?)
@@ -210,7 +204,8 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
     if results:
         name = f"{author['first_name']} {author['last_name']}"
         logger.info(f"Author {name} exists")
-        author_node = Author(uuid=results[0]["uuid"]).load(graph)
+        query = """MATCH (a:Author {uuid=$uuid} RETURN *)"""
+        results, _, _ = db.execute_query(query, uuid=results[0]["uuid"])
     else:
         # Create author node
         author["uuid"] = str(uuid4())
@@ -220,7 +215,7 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
             author.pop("orcid")
         author_object = Author(**author)
 
-        author_node = author_object.save(graph)
+        author_node = author_object.save()
         logger.info(
             (
                 f"Author {author['first_name']} {author['last_name']} "
@@ -231,62 +226,23 @@ def check_upload_author(author: Dict, graph: Memgraph) -> Author:
     return author_node
 
 
-def upload_article_to_memgraph(
-    output: ArticleMetadata, graph: Memgraph
-) -> bool:
+def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
     """
 
     Arguments:
     ----------
     output: Node
         A gqlalchemy Node representing an output
-    graph: Memgraph
+    db: neo4j.Driver
         Connection to a Memgraph instance
     """
-
-    author_nodes: List[Author] = []
-
-    article_dict = asdict(output)
-    author_list: List[Dict] = article_dict.pop("authors")
-
-    # Check output exists, otherwise create
-    results = list(
-        match()
-        .node(labels="Article", variable="a")
-        .where(item="a.doi", operator=Operator.EQUAL, literal=output.doi)
-        .return_([("a.doi", "doi")])
-        .execute()
-    )
-    if results:
-
-        article_node = Article(doi=results[0]["doi"]).load(graph)
-        logger.info(f"Output {output.doi} exists. Loaded from graph")
-
-    else:
-        # Create article node
-        article_dict["uuid"] = str(uuid4())
-
-        # Create Article object
-        article = Article(**article_dict)
-        article_node = article.save(graph)
-        logger.info(f"Output {output.doi} did not exist. Created new node")
-
-        # Check authors exists, otherwise create
-        for author in author_list:
-            author_node = check_upload_author(author, graph)
-            author_nodes.append(author_node)
-
-            # Create relations between output and authors
-            author_of(
-                _start_node_id=author_node._id,
-                _end_node_id=article_node._id,
-                rank=author["rank"],
-            ).save(graph)
+    article_dict = output.model_dump()
+    Article(uuid=uuid4(), **article_dict).save()
 
     return True
 
 
-def main(list_of_dois, graph) -> bool:
+def main(list_of_dois) -> bool:
     """ """
 
     dois = validate_dois(list_of_dois)
@@ -316,7 +272,7 @@ def main(list_of_dois, graph) -> bool:
             )
             for output in outputs_metadata:
                 try:
-                    result = upload_article_to_memgraph(output, graph)
+                    result = upload_article_to_memgraph(output)
                 except DatabaseError as ex:
                     logger.error(f"Error uploading {output.doi} to Memgraph")
                     logger.error(f"{ex}")
@@ -340,7 +296,8 @@ def argument_parser():
     return parser.parse_args()
 
 
-def add_country_relations(graph: Memgraph):
+@connect_to_db
+def add_country_relations(db: Driver):
     """Runs a query to add links to countries
 
     Adds a link to a country if the abstract contains the name
@@ -352,14 +309,14 @@ def add_country_relations(graph: Memgraph):
         WITH c
         MATCH (o:Output)
         WHERE o.abstract CONTAINS c.name
-        AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
-        CREATE (o)-[r:REFERS_TO]->(c)
+        AND NOT exists((o:Output)-[:refers_to]->(c:Country))
+        CREATE (o)-[r:refers_to]->(c)
         RETURN r
         LIMIT 1
         }
         RETURN r
         """
-    graph.execute(query)
+    db.execute_query(query)
 
     query = """
         MATCH (c:Country)
@@ -367,30 +324,18 @@ def add_country_relations(graph: Memgraph):
         WITH c
         MATCH (o:Output)
         WHERE o.title CONTAINS c.name
-        AND NOT exists((o:Output)-[:REFERS_TO]->(c:Country))
-        CREATE (o)-[r:REFERS_TO]->(c)
+        AND NOT exists((o:Output)-[:refers_to]->(c:Country))
+        CREATE (o)-[r:refers_to]->(c)
         RETURN r
         LIMIT 1
         }
         RETURN r
         """
-    graph.execute(query)
+    db.execute_query(query)
 
 
-def add_indexes(graph: Memgraph):
-    queries = [
-        "CREATE INDEX ON :Country(id);",
-        "CREATE INDEX ON :Author(uuid);",
-        "CREATE INDEX ON :Article(uuid);",
-        "CREATE INDEX ON :Article(result_type);",
-        # "CREATE EDGE INDEX ON :author_of(rank);",
-        "ANALYZE GRAPH;",
-    ]
-    for query in queries:
-        graph.execute(query)
-
-
-def entry_point():
+@connect_to_db
+def entry_point(db: Driver):
     """This is the console entry point to the programme"""
 
     args = argument_parser()
@@ -399,17 +344,14 @@ def entry_point():
         for line in csv_file:
             list_of_dois.append(line.strip())
 
-    logger.info(f"Connecting to Memgraph at {MG_HOST}:{MG_PORT}")
-    graph = Memgraph(host=MG_HOST, port=MG_PORT)
-
     if args.initialise:
-        graph.drop_database()
-        load_initial_data(graph, join("data", "init"))
+        query = """MATCH (node) DETACH DELETE node;"""
+        _, _, _ = db.execute_query(query)
+        logger.info("Deleted graph")
+        load_initial_data(join("data", "init"))
 
-    result = main(list_of_dois, graph)
-    add_country_relations(graph)
-
-    add_indexes(graph)
+    result = main(list_of_dois)
+    add_country_relations()
 
     if result:
         print("Success")
