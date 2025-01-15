@@ -10,10 +10,12 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         load_dotenv()
-
+        
         self.mg_host: str = os.getenv("MG_HOST", "127.0.0.1")
         self.mg_port: int = int(os.getenv("MG_PORT", 7687))
         self.mg_port_alt: int = int(os.getenv("MG_PORT_ALT", 7444))
+        self.mg_user: str = os.getenv("MG_USER")
+        self.mg_pass: str = os.getenv("MG_PASS")
 
         self.orcid_name_similarity_threshold: float = float(
             os.getenv("ORCID_NAME_SIMILARITY_THRESHOLD", 0.8)
@@ -30,22 +32,14 @@ class Config:
         )
 
         self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
-        self.refresh_token: str = ""
-        self.token = None
-
-        @property
-        def refresh_token(self):
-            return os.getenv("REFRESH_TOKEN", None)
-
-        @property
-        def token(self):
-            if self.token:
-                return self.token
-            else:
-                self.token = self._get_personal_token()
-                return self.token
-
         self._validate()
+
+    @property
+    def refresh_token(self):
+        return os.getenv("REFRESH_TOKEN")
+    @property
+    def token(self):
+        return self._get_personal_token()
 
     def _validate(self):
         if not 0 <= self.orcid_name_similarity_threshold <= 1:
@@ -71,12 +65,11 @@ class Config:
             except requests.JSONDecodeError as e:
                 logger.error(f"Error decoding JSON response: {e}")
                 raise ValueError(
-                    "Failed to obtain personal token due to JSON decode error"
+                    "Failed to obtain personal token due to JSON decode error. Check if the refresh token is correct or has not expired."
                 )
         else:
             raise ValueError(
                 "No refresh token found, could not obtain personal token"
             )
-
 
 config = Config()

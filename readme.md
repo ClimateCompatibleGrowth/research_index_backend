@@ -10,6 +10,8 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
    ```MG_HOST=
       MG_PORT=
       MG_PORT_ALT=
+      MG_USER=
+      MG_PASS=
       ORCID_NAME_SIMILARITY_THRESHOLD=
       NAME_SIMILARITY_THRESHOLD=
       OPENAIRE_API="https://api.openaire.eu"
