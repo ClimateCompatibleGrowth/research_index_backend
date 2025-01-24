@@ -28,10 +28,7 @@ from tqdm import tqdm
 
 from .config import config
 from .create_graph import load_initial_data
-from .get_metadata import (
-    get_metadata_from_openaire,
-    get_metadata_from_openalex,
-)
+from .get_metadata import MetadataFetcher
 from .models import AnonymousArticle, Article, Author
 from .parser import parse_metadata
 from .session import connect_to_db
@@ -78,26 +75,6 @@ def validate_dois(list_of_dois: List) -> Dict[str, List]:
                 dois["invalid"].append(doi)
 
     return dois
-
-
-def get_output_metadata(
-    session: requests_cache.CachedSession, doi: str, source: str = "OpenAire"
-) -> Dict:
-    """Request metadata from OpenAire Graph
-
-    Arguments
-    ---------
-    session: CachedSession
-    doi: str
-    source: str, default='OpenAire'
-        The API to connect to
-    """
-    if source == "OpenAire":
-        return get_metadata_from_openaire(session, doi, TOKEN)
-    elif source == "OpenAlex":
-        return get_metadata_from_openalex(session, doi)
-    else:
-        raise ValueError("Incorrect argument for output metadata source")
 
 
 @connect_to_db
@@ -244,16 +221,16 @@ def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
 
 def main(list_of_dois) -> bool:
     """ """
-
     dois = validate_dois(list_of_dois)
     valid_dois = dois["valid"]
 
     session = requests_cache.CachedSession("doi_cache", expire_after=30)
+    metadata_fetcher = MetadataFetcher(session)  # Initialize fetcher
 
     for valid_doi in tqdm(valid_dois):
         try:
-            openalex_metadata = get_output_metadata(
-                session, valid_doi, "OpenAlex"
+            openalex_metadata = metadata_fetcher.get_output_metadata(
+                valid_doi, source="OpenAlex"
             )
         except ValueError as ex:
             logger.error(
@@ -261,7 +238,9 @@ def main(list_of_dois) -> bool:
             )
             openalex_metadata = {"id": None}
         try:
-            metadata = get_output_metadata(session, valid_doi, "OpenAire")
+            metadata = metadata_fetcher.get_output_metadata(
+                valid_doi, source="OpenAire"
+            )
         except ValueError as ex:
             logger.error(
                 f"No OpenAire metadata found for doi {valid_doi}: {ex}"
