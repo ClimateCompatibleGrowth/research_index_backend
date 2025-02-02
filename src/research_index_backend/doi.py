@@ -7,20 +7,19 @@ This module handles:
 4. Batch processing with limits: TODO
 """
 
-from pydantic import BaseModel
+import time
 from logging import getLogger
 from re import IGNORECASE, compile
-import time
 from typing import Dict, List
+
 from neo4j import Driver
+from pydantic import BaseModel
 
 from .session import connect_to_db
 
 logger = getLogger(__name__)
 
 DOI_PATTERN = "10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$"
-
-
 class DOI(BaseModel):
     doi: str
     valid_pattern: bool = False
@@ -68,28 +67,26 @@ class DOIManager:
 
     def pattern_check(self):
         try:
+            self.valid_pattern_dois = []
+            self.invalid_pattern_dois = []
+
             for doi in self.doi_tracker:
                 if search := self.PATTERN.search(doi):
                     logger.debug(f"Valid DOI pattern: {search.group()}")
                     self.doi_tracker[doi].valid_pattern = True
+                    self.valid_pattern_dois.append(doi)
                 else:
-                    logger.warning(f"Invalid DOI pattern: {doi.doi}")
+                    logger.warning(f"Invalid DOI pattern: {doi}")
+                    self.invalid_pattern_dois.append(doi)
+            self.num_valid_pattern_dois = len(self.valid_pattern_dois)
+            self.num_invalid_pattern_dois = len(self.invalid_pattern_dois)
         except Exception as e:
             logger.error(f"Error whilst checking DOI pattern: {e}")
             raise
 
     @connect_to_db
     def search_dois(self, db: Driver):
-        valid_dois = [
-            doi.doi for doi in self.doi_tracker.values() if doi.valid_pattern
-        ]
-
-        self.num_valid_pattern_dois = len(valid_dois)
-        self.num_invalid_pattern_dois = (
-            len(self.doi_tracker) - self.num_valid_pattern_dois
-        )
-
-        if not valid_dois:
+        if not self.valid_pattern_dois:
             msg = "No DOIs have passed the pattern check and make sure to run pattern check first."
             logger.warning(msg)
             raise ValueError(msg)
@@ -98,18 +95,21 @@ class DOIManager:
             OPTIONAL MATCH (o:Output {doi: doi})
             RETURN doi, COUNT(o) > 0 as exists"""
         try:
-            results, _, _ = db.execute_query(query, dois=valid_dois)
-            existing_dois = [
+            results, _, _ = db.execute_query(
+                query, dois=self.valid_pattern_dois
+            )
+            self.existing_dois = [
                 record["doi"] for record in results if record["exists"]
             ]
+            self.new_dois = [
+                record["doi"] for record in results if not record["exists"]
+            ]
             for doi in self.doi_tracker:
-                if doi in existing_dois:
+                if doi in self.existing_dois:
                     self.doi_tracker[doi].already_exists = True
 
-            self.num_existing_dois = len(existing_dois)
-            self.num_new_dois = (
-                self.num_valid_pattern_dois - self.num_existing_dois
-            )
+            self.num_new_dois = len(self.new_dois)
+            self.num_existing_new_dois = len(self.existing_dois)
 
         except Exception as e:
             logger.error(f"Error whilst searching for DOIs: {e}")
@@ -126,56 +126,67 @@ class DOIManager:
 
     def ingestion_metrics(self) -> Dict[str, int]:
         total_time = self.end_time - self.start_time
-        metadata_failure = 0
 
-        if self.update_metadata:
-            metadata_failure = self.num_valid_pattern_dois - len(
-                [
-                    doi
-                    for doi in self.doi_tracker
-                    if self.doi_tracker[doi].ingestion_success
-                ]
-            )
-        else:
-            for doi in self.doi_tracker:
-                if (
-                    not self.doi_tracker[doi].ingestion_success
-                    and not self.doi_tracker[doi].already_exists
-                ):
-                    metadata_failure += 1
-
-        num_ingested_dois = len(
-            [
-                doi
-                for doi in self.doi_tracker
-                if self.doi_tracker[doi].ingestion_success
-            ]
+        processed_dois = (
+            self.valid_pattern_dois if self.update_metadata else self.new_dois
         )
 
-        openalex_success = len(
-            [
-                doi
-                for doi in self.doi_tracker
-                if self.doi_tracker[doi].openalex_metadata
-            ]
-        )
-        openaire_success = len(
-            [
-                doi
-                for doi in self.doi_tracker
-                if self.doi_tracker[doi].openaire_metadata
-            ]
-        )
+        metadata_pass = [
+            doi
+            for doi in self.doi_tracker
+            if self.doi_tracker[doi].ingestion_success
+            and doi in processed_dois
+        ]
+        metadata_failure = [
+            doi
+            for doi in self.doi_tracker
+            if not self.doi_tracker[doi].ingestion_success
+            and doi in processed_dois
+        ]
 
-        return {
+        self.ingested_dois = [
+            doi
+            for doi in self.doi_tracker
+            if self.doi_tracker[doi].ingestion_success
+        ]
+
+        openalex_success = [
+            doi
+            for doi in processed_dois
+            if self.doi_tracker[doi].openalex_metadata
+        ]
+        openaire_success = [
+            doi
+            for doi in processed_dois
+            if self.doi_tracker[doi].openaire_metadata
+        ]
+
+        metrics = {
             "submitted_dois": len(self.list_of_dois),
+            "processed_dois": len(processed_dois),
             "new_dois": self.num_new_dois,
-            "existing_dois": self.num_existing_dois,
-            "ingested_dois": num_ingested_dois,
-            "metadata_failure": metadata_failure,
+            "existing_dois": self.num_existing_new_dois,
+            "ingested_dois": len(self.ingested_dois),
+            "metadata_pass": len(metadata_pass),
+            "metadata_failure": len(metadata_failure),
             "valid_pattern_dois": self.num_valid_pattern_dois,
             "invalid_pattern_dois": self.num_invalid_pattern_dois,
-            "openalex_success": openalex_success,
-            "openaire_success": openaire_success,
+            "openalex_success": len(openalex_success),
+            "openaire_success": len(openaire_success),
             "total_time_seconds": round(total_time, 3),
         }
+
+        doi_states = {
+            "submitted_dois": self.list_of_dois,
+            "processed_dois": processed_dois,
+            "new_dois": self.new_dois,
+            "existing_dois": self.existing_dois,
+            "ingested_dois": self.ingested_dois,
+            "metadata_pass": metadata_pass,
+            "metadata_failure": metadata_failure,
+            "openalex_success": openalex_success,
+            "openaire_success": openaire_success,
+            "valid_pattern_dois": self.valid_pattern_dois,
+            "invalid_pattern_dois": self.invalid_pattern_dois,
+        }
+        return metrics, doi_states

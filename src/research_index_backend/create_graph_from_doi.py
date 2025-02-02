@@ -365,9 +365,10 @@ def entry_point(db: Driver):
 
     doi_manager = main(list_of_dois, limit=args.limit, update_metadata=args.update_metadata)
     add_country_relations()
-    report = doi_manager.ingestion_metrics()
-    logger.info(f"Report: {report}")
-    print(f"Report: {report}")
+    metrics, processed_dois = doi_manager.ingestion_metrics()
+    logger.info(f"Report: {metrics}, {processed_dois}")
+    print(f"Report: {metrics}")    
+    return metrics, processed_dois
 
 if __name__ == "__main__":
     entry_point()
