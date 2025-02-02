@@ -53,31 +53,6 @@ basicConfig(
     level=DEBUG,
 )
 
-
-# Use regex pattern from
-# https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-PATTERN = compile("10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$", IGNORECASE)
-
-
-def validate_dois(list_of_dois: List) -> Dict[str, List]:
-    """Validate DOIs"""
-
-    dois = defaultdict(list)
-    # Iterate over the list of possible DOIs and return valid, otherwise raise
-    # a warning
-    for doi in list_of_dois:
-        if not doi == "":
-            search = PATTERN.search(doi)
-            if search:
-                logger.info(f"{search.group()} is a valid DOI.")
-                dois["valid"].append(search.group())
-            else:
-                logger.warning(f"{doi} is not a DOI.")
-                dois["invalid"].append(doi)
-
-    return dois
-
-
 @connect_to_db
 def match_author_name(db: Driver, author: Dict) -> List:
     name = f"{author['first_name'][0]} {author['last_name']}"
