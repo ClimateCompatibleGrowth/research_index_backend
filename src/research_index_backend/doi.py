@@ -19,7 +19,10 @@ from .session import connect_to_db
 
 logger = getLogger(__name__)
 
-DOI_PATTERN = "10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$"
+# Use regex pattern from
+# https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+DOI_PATTERN = r"10\.\d{4,9}/(?=.*\d)[-._;()/:A-Z0-9]+$"
+
 class DOI(BaseModel):
     doi: str
     valid_pattern: bool = False
@@ -48,8 +51,8 @@ class DOIManager:
         self.list_of_dois = [
             doi.strip()
             .rstrip(".")
-            .replace("doi.org/", "")
             .replace("https://doi.org/", "")
+            .replace("doi.org/", "")
             for doi in list_of_dois
         ]
         self.limit = limit
