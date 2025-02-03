@@ -32,7 +32,7 @@ class DOI(BaseModel):
     ingestion_success: bool = False
 
 
-class DOITracker(DOI):
+class DOITracker(BaseModel):
     doi_tracker: Dict[str, DOI]
 
 
@@ -57,7 +57,7 @@ class DOIManager:
         ]
         self.limit = limit
         self.update_metadata = update_metadata
-        self.doi_tracker = {
+        self.doi_tracker: DOITracker = {
             doi: DOI(doi=doi) for doi in self.list_of_dois[: self.limit]
         }
         self.PATTERN = compile(DOI_PATTERN, IGNORECASE)
