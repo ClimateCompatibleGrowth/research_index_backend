@@ -37,17 +37,61 @@ class DOITracker(BaseModel):
 
 
 class DOIManager:
+    """Manages the validation and ingestion tracking of Digital Object Identifiers (DOIs).
+
+    This class handles DOI validation, database existence checks, and metadata tracking.
+    It processes DOIs up to a specified limit and can optionally update metadata
+    for existing entries.
+
+    Parameters
+    ----------
+    list_of_dois : List[str]
+        List of DOI strings to process
+    limit : int
+        Maximum number of DOIs to process from the list
+    update_metadata : bool, optional
+        Whether to update metadata for existing DOIs (default is True)
+
+    Attributes
+    ----------
+    doi_tracker : Dict[str, DOI]
+        Dictionary tracking the state of each processed DOI
+    valid_pattern_dois : List[str]
+        DOIs that match the valid pattern
+    invalid_pattern_dois : List[str]
+        DOIs that don't match the valid pattern
+    existing_dois : List[str]
+        DOIs that already exist in the database
+    new_dois : List[str]
+        DOIs that are not yet in the database
+
+    Methods
+    -------
+    validate_dois()
+        Performs pattern validation and database existence checks
+    ingestion_metrics()
+        Returns metrics about the ingestion process
+    pattern_check()
+        Validates DOI patterns against the standard format
+    search_dois()
+        Checks database for existing DOIs
+
+    Raises
+    ------
+    ValueError
+        If DOI list is empty or limit is invalid
+    """
     def __init__(
         self, list_of_dois: List[str], limit: int, update_metadata=True
     ) -> None:
 
         if not list_of_dois:
             raise ValueError("DOI list cannot be empty")
-        if (limit <= 0) or (limit > len(list_of_dois)):
+        if limit <= 0:
             raise ValueError(
-                "Limit must be positive and less than the number of DOIs"
+                "Limit must be positive and less than or equal to the number of DOIs."
             )
-
+            
         self.list_of_dois = [
             doi.strip()
             .rstrip(".")
@@ -55,7 +99,7 @@ class DOIManager:
             .replace("doi.org/", "")
             for doi in list_of_dois
         ]
-        self.limit = limit
+        self.limit = limit if limit < len(self.list_of_dois) else len(self.list_of_dois) 
         self.update_metadata = update_metadata
         self.doi_tracker: DOITracker = {
             doi: DOI(doi=doi) for doi in self.list_of_dois[: self.limit]
@@ -88,9 +132,9 @@ class DOIManager:
             raise
 
     @connect_to_db
-    def search_dois(self, db: Driver):
+    def search_dois(self, db: Driver) -> None:
         if not self.valid_pattern_dois:
-            msg = "No DOIs have passed the pattern check and make sure to run pattern check first."
+            msg = "None of the provided DOIs match the valid pattern."
             logger.warning(msg)
             raise ValueError(msg)
         query = """
