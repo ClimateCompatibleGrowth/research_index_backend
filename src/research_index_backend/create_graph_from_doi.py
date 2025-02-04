@@ -13,11 +13,9 @@
 """
 
 import argparse
-from collections import defaultdict
 from difflib import SequenceMatcher
 from logging import DEBUG, basicConfig, getLogger
 from os.path import join
-from re import IGNORECASE, compile
 from typing import Dict, List
 from uuid import uuid4
 
@@ -28,13 +26,11 @@ from tqdm import tqdm
 
 from .config import config
 from .create_graph import load_initial_data
+from .doi import DOIManager
 from .get_metadata import MetadataFetcher
 from .models import AnonymousArticle, Article, Author
 from .parser import parse_metadata
 from .session import connect_to_db
-from .doi import DOIManager
-
-TOKEN = config.token
 
 MG_HOST = config.mg_host
 MG_PORT = config.mg_port
@@ -52,6 +48,7 @@ basicConfig(
     encoding="utf-8",
     level=DEBUG,
 )
+
 
 @connect_to_db
 def match_author_name(db: Driver, author: Dict) -> List:
@@ -195,51 +192,51 @@ def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
     return True
 
 
-def main(list_of_dois: list,limit: int, update_metadata: bool):
-    try: 
-        doi_manager = DOIManager(list_of_dois, limit=limit, update_metadata=update_metadata)
-        
+def main(list_of_dois: list, limit: int, update_metadata: bool):
+    try:
+        doi_manager = DOIManager(
+            list_of_dois, limit=limit, update_metadata=update_metadata
+        )
+
         doi_manager.start_ingestion()
         doi_manager.validate_dois()
         if not doi_manager.update_metadata and not doi_manager.num_new_dois:
-            logger.warning("No new DOIs to process or valid existing DOIs to update.")
+            logger.warning(
+                "No new DOIs to process or valid existing DOIs to update."
+            )
             doi_manager.end_ingestion()
             return doi_manager
     except Exception as e:
         logger.error(f"Error validating DOIs: {e}")
         raise e
-    
 
     session = requests_cache.CachedSession("doi_cache", expire_after=30)
     metadata_fetcher = MetadataFetcher(session)
-    
+
     for doi in tqdm(doi_manager.doi_tracker):
-        if doi_manager.doi_tracker[doi].already_exists and not doi_manager.update_metadata:
+        if (
+            doi_manager.doi_tracker[doi].already_exists
+            and not doi_manager.update_metadata
+        ):
             logger.info(f"DOI {doi} already exists in the database.")
-            continue        
+            continue
         try:
             openalex_metadata = metadata_fetcher.get_output_metadata(
                 doi, source="OpenAlex"
             )
             doi_manager.doi_tracker[doi].openalex_metadata = True
         except ValueError as ex:
-            logger.error(
-                f"No OpenAlex metadata found for doi {doi}: {ex}"
-            )
-            openalex_metadata = {"id": None}                
+            logger.error(f"No OpenAlex metadata found for doi {doi}: {ex}")
+            openalex_metadata = {"id": None}
         try:
             metadata = metadata_fetcher.get_output_metadata(
                 doi, source="OpenAire"
             )
             doi_manager.doi_tracker[doi].openaire_metadata = True
         except ValueError as ex:
-            logger.error(
-                f"No OpenAire metadata found for doi {doi}: {ex}"
-            )
+            logger.error(f"No OpenAire metadata found for doi {doi}: {ex}")
         else:
-            outputs_metadata = parse_metadata(
-                metadata, doi, openalex_metadata
-            )
+            outputs_metadata = parse_metadata(metadata, doi, openalex_metadata)
             for output in outputs_metadata:
                 try:
                     result = upload_article_to_memgraph(output)
@@ -262,24 +259,26 @@ def argument_parser():
         description="Process DOIs and create/update a graph database"
     )
     parser.add_argument(
-        "list_of_dois",
-        help="Path to CSV file containing list of DOIs"
+        "list_of_dois", help="Path to CSV file containing list of DOIs"
     )
     parser.add_argument(
-        "-i", "--initialise",
+        "-i",
+        "--initialise",
         action="store_true",
-        help="Delete existing data and create new database"
+        help="Delete existing data and create new database",
     )
     parser.add_argument(
-        "-l", "--limit",
+        "-l",
+        "--limit",
         type=int,
         default=50,
-        help="Limit number of DOIs to process (default: 50)"
+        help="Limit number of DOIs to process (default: 50)",
     )
     parser.add_argument(
-        "-u", "--update-metadata",
+        "-u",
+        "--update-metadata",
         action="store_true",
-        help="Update metadata for existing DOIs"
+        help="Update metadata for existing DOIs",
     )
     return parser.parse_args()
 
@@ -326,7 +325,7 @@ def add_country_relations(db: Driver):
 def entry_point(db: Driver):
     """This is the console entry point to the programme"""
 
-    args = argument_parser()    
+    args = argument_parser()
     list_of_dois = []
     with open(args.list_of_dois, "r") as csv_file:
         for line in csv_file:
@@ -338,12 +337,15 @@ def entry_point(db: Driver):
         logger.info("Deleted graph")
         load_initial_data(join("data", "init"))
 
-    doi_manager = main(list_of_dois, limit=args.limit, update_metadata=args.update_metadata)
+    doi_manager = main(
+        list_of_dois, limit=args.limit, update_metadata=args.update_metadata
+    )
     add_country_relations()
     metrics, processed_dois = doi_manager.ingestion_metrics()
     logger.info(f"Report: {metrics}, {processed_dois}")
-    print(f"Report: {metrics}")    
+    print(f"Report: {metrics}")
     return metrics, processed_dois
+
 
 if __name__ == "__main__":
     entry_point()

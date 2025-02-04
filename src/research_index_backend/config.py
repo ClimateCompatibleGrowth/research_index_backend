@@ -33,7 +33,7 @@ class Config:
 
         self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
         self._refresh_token: str = ""
-        self._token = None
+        self._token: str = ""
         self._validate()
 
     @property
