@@ -32,22 +32,28 @@ class Config:
         )
 
         self.openaire_token_endpoint = f"{self.openaire_service}/uoa-user-management/api/users/getAccessToken"
-        self.refresh_token: str = ""
-        self.token = None
-
-        @property
-        def refresh_token(self):
-            return os.getenv("REFRESH_TOKEN", None)
-
-        @property
-        def token(self):
-            if self.token:
-                return self.token
-            else:
-                self.token = self._get_personal_token()
-                return self.token
-
+        self._refresh_token: str = ""
+        self._token = None
         self._validate()
+
+    @property
+    def refresh_token(self):
+        if self._refresh_token:
+            return self._refresh_token
+        else:
+            self._refresh_token = os.getenv("REFRESH_TOKEN", None)
+            if self._refresh_token:
+                return self._refresh_token
+            else:
+                raise ValueError("No refresh token provided")
+
+    @property
+    def token(self):
+        if self._token:
+            return self._token
+        else:
+            self._token = self._get_personal_token()
+            return self._token
 
     def _validate(self):
         if not 0 <= self.orcid_name_similarity_threshold <= 1:
