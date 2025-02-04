@@ -322,7 +322,7 @@ def add_country_relations(db: Driver):
 
 
 @connect_to_db
-def entry_point(db: Driver):
+def entry_point(db: Driver) -> None:
     """This is the console entry point to the programme"""
 
     args = argument_parser()
@@ -342,9 +342,14 @@ def entry_point(db: Driver):
     )
     add_country_relations()
     metrics, processed_dois = doi_manager.ingestion_metrics()
+
     logger.info(f"Report: {metrics}, {processed_dois}")
-    print(f"Report: {metrics}")
-    return metrics, processed_dois
+
+    max_key_length = max(len(key) for key in metrics.keys())
+    print(f"{'Metric'.ljust(max_key_length)} | Value")
+    print("-" * (max_key_length + 9))
+    for key, value in metrics.items():
+        print(f"{key.ljust(max_key_length)} | {value}")
 
 
 if __name__ == "__main__":
