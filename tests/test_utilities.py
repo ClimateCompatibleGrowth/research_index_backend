@@ -16,3 +16,11 @@ def test_clean_utf():
     actual = clean_html(text)
 
     assert actual == expected
+
+
+def test_clean_line_breaks():
+    text = " \n bla\nbla"
+    expected = "bla bla"
+    actual = clean_html(text)
+
+    assert actual == expected
