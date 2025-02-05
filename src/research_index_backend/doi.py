@@ -83,16 +83,10 @@ class DOIManager:
         If DOI list is empty or limit is invalid
     """
     def __init__(
-        self, list_of_dois: List[str], limit: int, update_metadata=True
+        self, list_of_dois: List[str], limit: int, update_metadata: bool = True
     ) -> None:
 
-        if not list_of_dois:
-            raise ValueError("DOI list cannot be empty")
-        if limit <= 0:
-            raise ValueError(
-                "Limit must be positive and less than or equal to the number of DOIs."
-            )
-            
+        self._validate_inputs(list_of_dois, limit, update_metadata)
         self.list_of_dois = [
             doi.strip()
             .rstrip(".")
@@ -107,12 +101,22 @@ class DOIManager:
         }
         self.PATTERN = compile(DOI_PATTERN, IGNORECASE)
 
+    def _validate_inputs(self, dois: List[str], limit: int, update_metadata: bool) -> None:
+        if not isinstance(dois, list):
+            raise TypeError("DOIs must be provided as a list")
+        if not dois:
+            raise ValueError("DOI list cannot be empty")
+        if not isinstance(limit, int) or limit <= 0:
+            raise ValueError("Limit must be a positive integer")
+        if not isinstance(update_metadata, bool):
+            raise TypeError("update_metadata must be a boolean")           
+
     def start_ingestion(self):
         self.start_time = time.time()
 
     def end_ingestion(self):
         self.end_time = time.time()
-
+        
     def pattern_check(self):
         try:
             self.valid_pattern_dois = []
@@ -215,7 +219,6 @@ class DOIManager:
             for doi in processed_dois
             if self.doi_tracker[doi].openaire_metadata
         ]
-
         metrics = {
             "submitted_dois": len(self.list_of_dois),
             "processed_dois": len(processed_dois),
