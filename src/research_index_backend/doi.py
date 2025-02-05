@@ -165,7 +165,7 @@ class DOIManager:
                 self.doi_tracker[doi].already_exists = True
 
         self.num_new_dois = len(self.new_dois)
-        self.num_existing_new_dois = len(self.existing_dois)
+        self.num_existing_dois = len(self.existing_dois)
         
         logger.info(f"Found {self.num_existing_dois} existing and {self.num_new_dois} new DOIs")
 
@@ -220,7 +220,7 @@ class DOIManager:
             "submitted_dois": len(self.list_of_dois),
             "processed_dois": len(processed_dois),
             "new_dois": self.num_new_dois,
-            "existing_dois": self.num_existing_new_dois,
+            "existing_dois": self.num_existing_dois,
             "ingested_dois": len(self.ingested_dois),
             "metadata_pass": len(metadata_pass),
             "metadata_failure": len(metadata_failure),
