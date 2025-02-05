@@ -13,7 +13,10 @@ from re import IGNORECASE, compile
 from typing import Dict, List
 
 from neo4j import Driver
-from neo4j.exceptions import ServiceUnavailable, Neo4jError # https://neo4j.com/docs/api/python-driver/current/api.html#errors
+from neo4j.exceptions import (
+    ServiceUnavailable,
+    Neo4jError,
+)  # https://neo4j.com/docs/api/python-driver/current/api.html#errors
 from pydantic import BaseModel
 
 from .session import connect_to_db
@@ -23,6 +26,7 @@ logger = getLogger(__name__)
 # Use regex pattern from
 # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
 DOI_PATTERN = r"10\.\d{4,9}/(?=.*\d)[-._;()/:A-Z0-9]+$"
+
 
 class DOI(BaseModel):
     doi: str
@@ -82,6 +86,7 @@ class DOIManager:
     ValueError
         If DOI list is empty or limit is invalid
     """
+
     def __init__(
         self, list_of_dois: List[str], limit: int, update_metadata: bool = True
     ) -> None:
@@ -94,14 +99,18 @@ class DOIManager:
             .replace("doi.org/", "")
             for doi in list_of_dois
         ]
-        self.limit = limit if limit < len(self.list_of_dois) else len(self.list_of_dois) 
+        self.limit = (
+            limit if limit < len(self.list_of_dois) else len(self.list_of_dois)
+        )
         self.update_metadata = update_metadata
         self.doi_tracker: DOITracker = {
             doi: DOI(doi=doi) for doi in self.list_of_dois[: self.limit]
         }
         self.PATTERN = compile(DOI_PATTERN, IGNORECASE)
 
-    def _validate_inputs(self, dois: List[str], limit: int, update_metadata: bool) -> None:
+    def _validate_inputs(
+        self, dois: List[str], limit: int, update_metadata: bool
+    ) -> None:
         if not isinstance(dois, list):
             raise TypeError("DOIs must be provided as a list")
         if not dois:
@@ -109,14 +118,14 @@ class DOIManager:
         if not isinstance(limit, int) or limit <= 0:
             raise ValueError("Limit must be a positive integer")
         if not isinstance(update_metadata, bool):
-            raise TypeError("update_metadata must be a boolean")           
+            raise TypeError("update_metadata must be a boolean")
 
     def start_ingestion(self):
         self.start_time = time.time()
 
     def end_ingestion(self):
         self.end_time = time.time()
-        
+
     def pattern_check(self):
         try:
             self.valid_pattern_dois = []
@@ -147,7 +156,9 @@ class DOIManager:
             OPTIONAL MATCH (o:Output {doi: doi})
             RETURN doi, COUNT(o) > 0 as exists"""
         try:
-            results, _, _ = db.execute_query(query, dois=self.valid_pattern_dois)
+            results, _, _ = db.execute_query(
+                query, dois=self.valid_pattern_dois
+            )
         except ServiceUnavailable as e:
             logger.error(f"Neo4j service unavailable: {e}")
             raise
@@ -170,9 +181,10 @@ class DOIManager:
 
         self.num_new_dois = len(self.new_dois)
         self.num_existing_dois = len(self.existing_dois)
-        
-        logger.info(f"Found {self.num_existing_dois} existing and {self.num_new_dois} new DOIs")
 
+        logger.info(
+            f"Found {self.num_existing_dois} existing and {self.num_new_dois} new DOIs"
+        )
 
     def validate_dois(self) -> Dict[str, List[str]]:
         try:
@@ -203,6 +215,13 @@ class DOIManager:
             and doi in processed_dois
         ]
 
+        updated_existing_dois = [
+            doi
+            for doi in processed_dois
+            if self.doi_tracker[doi].ingestion_success
+            and doi in self.existing_dois
+        ]
+
         self.ingested_dois = [
             doi
             for doi in self.doi_tracker
@@ -224,6 +243,7 @@ class DOIManager:
             "processed_dois": len(processed_dois),
             "new_dois": self.num_new_dois,
             "existing_dois": self.num_existing_dois,
+            "updated_existing_dois": len(updated_existing_dois),
             "ingested_dois": len(self.ingested_dois),
             "metadata_pass": len(metadata_pass),
             "metadata_failure": len(metadata_failure),
@@ -239,6 +259,7 @@ class DOIManager:
             "processed_dois": processed_dois,
             "new_dois": self.new_dois,
             "existing_dois": self.existing_dois,
+            "updated_existing_dois": updated_existing_dois,
             "ingested_dois": self.ingested_dois,
             "metadata_pass": metadata_pass,
             "metadata_failure": metadata_failure,
