@@ -13,6 +13,7 @@ from re import IGNORECASE, compile
 from typing import Dict, List
 
 from neo4j import Driver
+from neo4j.exceptions import ServiceUnavailable, Neo4jError # https://neo4j.com/docs/api/python-driver/current/api.html#errors
 from pydantic import BaseModel
 
 from .session import connect_to_db
@@ -142,25 +143,32 @@ class DOIManager:
             OPTIONAL MATCH (o:Output {doi: doi})
             RETURN doi, COUNT(o) > 0 as exists"""
         try:
-            results, _, _ = db.execute_query(
-                query, dois=self.valid_pattern_dois
-            )
-            self.existing_dois = [
-                record["doi"] for record in results if record["exists"]
-            ]
-            self.new_dois = [
-                record["doi"] for record in results if not record["exists"]
-            ]
-            for doi in self.doi_tracker:
-                if doi in self.existing_dois:
-                    self.doi_tracker[doi].already_exists = True
-
-            self.num_new_dois = len(self.new_dois)
-            self.num_existing_new_dois = len(self.existing_dois)
-
-        except Exception as e:
-            logger.error(f"Error whilst searching for DOIs: {e}")
+            results, _, _ = db.execute_query(query, dois=self.valid_pattern_dois)
+        except ServiceUnavailable as e:
+            logger.error(f"Neo4j service unavailable: {e}")
             raise
+        except Neo4jError as e:
+            logger.error(f"Neo4j error occurred during query execution: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error whilst searching for DOIs: {e}")
+            raise
+
+        self.existing_dois = [
+            record["doi"] for record in results if record["exists"]
+        ]
+        self.new_dois = [
+            record["doi"] for record in results if not record["exists"]
+        ]
+        for doi in self.doi_tracker:
+            if doi in self.existing_dois:
+                self.doi_tracker[doi].already_exists = True
+
+        self.num_new_dois = len(self.new_dois)
+        self.num_existing_new_dois = len(self.existing_dois)
+        
+        logger.info(f"Found {self.num_existing_dois} existing and {self.num_new_dois} new DOIs")
+
 
     def validate_dois(self) -> Dict[str, List[str]]:
         try:
