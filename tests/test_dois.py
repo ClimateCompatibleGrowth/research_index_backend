@@ -1,3 +1,4 @@
+import pytest
 from research_index_backend.doi import DOIManager
 
 valid_dois = [
@@ -94,3 +95,24 @@ def test_case_insensitive_pattern():
     )
     doi_manager.pattern_check()
     assert all(doi.valid_pattern for doi in doi_manager.doi_tracker.values())
+    
+def test_invalid_limit():
+    """Test that providing an invalid (negative) limit raises a ValueError."""
+    with pytest.raises(ValueError):
+        # Expect DOIManager to raise an error upon invalid limit input.
+        doi_manager = DOIManager(["10.5281/zenodo.8140241"], limit=-5, update_metadata=False)
+        doi_manager.validate_dois()
+
+def test_wrong_type_for_doi_list():
+    """Test that providing a wrong type (non-iterable) for DOI list raises a TypeError."""
+    with pytest.raises(TypeError):
+        # Passing a single string instead of a list should raise a TypeError.
+        DOIManager("10.5281/zenodo.8140241", limit=1, update_metadata=False)
+        
+def test_wrong_tyoe_for_update_metadata():
+    """Test that providing a wrong type for update_metadata raises a TypeError."""
+    with pytest.raises(TypeError):
+        # Passing a string instead of a boolean should raise a TypeError.
+        DOIManager(["10.5281/zenodo.8140241"], limit=1, update_metadata="False")
+        
+# TODO: should the elements of the list of DOIs be checked for type or this is handled in the entry point?
