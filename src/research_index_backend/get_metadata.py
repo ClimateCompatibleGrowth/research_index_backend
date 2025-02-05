@@ -9,9 +9,10 @@ import requests_cache
 from .config import config
 
 class MetadataFetcher:
-    def __init__(self, session: requests_cache.CachedSession, token: str = None):
+    def __init__(self, session: requests_cache.CachedSession, token: str = None, save_json: bool = False):
         self.session = session
         self.token = token or config.token
+        self.save_json = save_json
         self.logger = getLogger(__name__)
         basicConfig(
             filename="research_index_backend.log",
@@ -45,7 +46,8 @@ class MetadataFetcher:
         if error := response.json().get("error"):
             raise ValueError(error)
 
-        self._save_json_response(response, "data/json/openaire", doi)
+        if self.save_json:
+            self._save_json_response(response, "data/json/openaire", doi)
 
         if response.json()["response"]["results"]:
             return response.json()
@@ -62,7 +64,8 @@ class MetadataFetcher:
         
         try:
             response.raise_for_status()
-            self._save_json_response(response, "data/json/openalex", doi)
+            if self.save_json:
+                self._save_json_response(response, "data/json/openalex", doi)
         except requests.exceptions.HTTPError as err:
             self.logger.error(str(err))
 

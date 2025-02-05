@@ -39,13 +39,14 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
           -i, --initialise      Delete existing data and create new database
           -l, --limit N         Limit number of DOIs to process (default: 50)
           -u, --update-metadata Update metadata for existing DOIs
+          -w, --write-metadata  Save JSON responses to disk 
 
         Examples:
           -> Process 10 DOIs from file:
           $ research_index list_of_dois.csv -l 10  # Process 10 DOIs from file
 
-          -> Update metadata for existing DOIs
-          $ research_index list_of_dois.csv --update-metadata
+          -> Update metadata for existing DOIs and save metadata
+          $ research_index list_of_dois.csv --update-metadata --write-metadata
 
 # Development
 

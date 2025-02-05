@@ -192,7 +192,7 @@ def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
     return True
 
 
-def main(list_of_dois: list, limit: int, update_metadata: bool):
+def main(list_of_dois: list, limit: int, update_metadata: bool, write_metadata: bool):
     try:
         doi_manager = DOIManager(
             list_of_dois, limit=limit, update_metadata=update_metadata
@@ -211,7 +211,7 @@ def main(list_of_dois: list, limit: int, update_metadata: bool):
         raise e
 
     session = requests_cache.CachedSession("doi_cache", expire_after=30)
-    metadata_fetcher = MetadataFetcher(session)
+    metadata_fetcher = MetadataFetcher(session, save_json=write_metadata)
 
     for doi in tqdm(doi_manager.doi_tracker):
         if (
@@ -280,6 +280,12 @@ def argument_parser():
         action="store_true",
         help="Update metadata for existing DOIs",
     )
+    parser.add_argument(
+        "-w",
+        "--write-metadata",
+        action="store_true",
+        help="Store metadata in JSON files",
+    )
     return parser.parse_args()
 
 
@@ -337,9 +343,8 @@ def entry_point(db: Driver) -> None:
         logger.info("Deleted graph")
         load_initial_data(join("data", "init"))
 
-    doi_manager = main(
-        list_of_dois, limit=args.limit, update_metadata=args.update_metadata
-    )
+    doi_manager = main(list_of_dois, limit=args.limit, update_metadata=args.update_metadata,
+    write_metadata=args.write_metadata)
     add_country_relations()
     metrics, processed_dois = doi_manager.ingestion_metrics()
 
