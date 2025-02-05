@@ -9,6 +9,7 @@ def clean_html(raw_html):
     """Remove HTML markup from a string and normalize UTF8"""
     cleantext = (
         sub(CLEANR, "", raw_html)
+        .replace("\n", " ")
         .replace("\xa0", " ")
         .replace("\u00ad", " ")
         .replace("�", " ")
@@ -17,7 +18,6 @@ def clean_html(raw_html):
         .replace("    ", " ")
         .replace("   ", " ")
         .replace("  ", " ")
-        .replace("\n", " ")
         .strip()
     )
     return unescape(normalize("NFC", cleantext))
