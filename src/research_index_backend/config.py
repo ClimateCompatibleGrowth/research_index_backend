@@ -70,17 +70,33 @@ class Config:
         if refresh_token := os.getenv("REFRESH_TOKEN"):
             logger.info("Found refresh token. Obtaining personal token.")
             query = f"?refreshToken={refresh_token}"
-            response = requests.get(self.openaire_token_endpoint + query)
-            logger.info(f"Status code: {response.status_code}")
             try:
-                response_json = response.json()
-                logger.debug(response_json)
-                return response_json["access_token"]
-            except requests.JSONDecodeError as e:
-                logger.error(f"Error decoding JSON response: {e}")
-                raise ValueError(
-                    "Failed to obtain personal token due to JSON decode error"
-                )
+                response = requests.get(self.openaire_token_endpoint + query)
+                logger.info(f"Status code: {response.status_code}")
+                response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                if 400 <= response.status_code < 500:
+                    raise ValueError(
+                        "OpenAire refresh token is invalid or expired. Please update token and try again."
+                    )
+                elif 500 <= response.status_code < 600:
+                    raise
+                else:
+                    raise
+            else:
+                try:
+                    response_json = response.json()
+                    logger.debug(response_json)
+                    return response_json["access_token"]
+                except requests.JSONDecodeError as e:
+                    logger.error(f"Error decoding JSON response: {e}")
+                    raise ValueError(
+                        "Failed to obtain personal token due to JSON decode error"
+                    )
+                except Exception as e:
+                    msg = str(e)
+                    logger.error(f"{msg}")
+                    raise
         else:
             raise ValueError(
                 "No refresh token found, could not obtain personal token"

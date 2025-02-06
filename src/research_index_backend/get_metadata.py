@@ -8,8 +8,14 @@ import requests_cache
 
 from .config import config
 
+
 class MetadataFetcher:
-    def __init__(self, session: requests_cache.CachedSession, token: str = None, save_json: bool = False):
+    def __init__(
+        self,
+        session: requests_cache.CachedSession,
+        token: str = "",
+        save_json: bool = False,
+    ):
         self.session = session
         self.token = token or config.token
         self.save_json = save_json
@@ -25,7 +31,7 @@ class MetadataFetcher:
         """Helper method to save JSON responses"""
         clean_doi = doi.replace("/", "")
         makedirs(directory, exist_ok=True)
-        
+
         with open(f"{directory}/{clean_doi}.json", "w") as json_file:
             try:
                 dump(response.json(), json_file)
@@ -55,7 +61,9 @@ class MetadataFetcher:
                 raise ValueError(f"DOI {doi} returned no results")
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
-                raise ValueError("OpenAire API token is invalid or expired. Please update the token and try again.") from e
+                raise ValueError(
+                    "OpenAire API token is invalid or expired. Please update the token and try again."
+                ) from e
             else:
                 raise
 
@@ -64,9 +72,9 @@ class MetadataFetcher:
         self.logger.info(f"Requesting {doi} from OpenAlex")
         query = f"doi:{doi}?mailto=wusher@kth.se"
         api_url = "https://api.openalex.org/works/"
-        
+
         response = self.session.get(api_url + query)
-        
+
         try:
             response.raise_for_status()
             if self.save_json:
