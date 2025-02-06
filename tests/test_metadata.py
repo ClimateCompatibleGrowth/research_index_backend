@@ -7,6 +7,7 @@ Obtain a refresh token from https://develop.openaire.eu/personal-token
 
 import pytest
 from requests_cache import CachedSession
+from requests.exceptions import HTTPError
 
 from research_index_backend.get_metadata import MetadataFetcher
 from research_index_backend.create_graph_from_doi import score_name_similarity
@@ -19,15 +20,26 @@ def session():
 def fetcher(session):
     return MetadataFetcher(session)
 
-class TestMetadataFetcher:
-    @pytest.mark.skip(reason="Requires access to OpenAire Graph API")
-    def test_broken_doi(self, fetcher):
-        """An incorrect DOI should raise an error"""
-        broken_doi = "10.1dd016/j.envsoft.2021"
-        with pytest.raises(ValueError) as ex:
-            fetcher.get_output_metadata(broken_doi)
-        expected = "DOI 10.1dd016/j.envsoft.2021 returned no results"
-        assert str(ex.value) == expected
+def dummy_get_403(url, headers):
+    class DummyResponse:
+        status_code = 403
+        def json(self):
+            return {}
+        def raise_for_status(self):
+            http_err = HTTPError("403 Client Error: Forbidden for url: " + url)
+            http_err.response = self
+            raise http_err
+    return DummyResponse()
+
+class TestMetadataFetcher403:
+    def test_api_403_response(self, session, monkeypatch):
+        monkeypatch.setattr(session, "get", dummy_get_403)
+        fetcher = MetadataFetcher(session=session)
+        doi = "10.1016/j.apenergy.2023.121219"
+        with pytest.raises(ValueError) as e:
+            fetcher.get_output_metadata(doi)
+        expected = "OpenAire API token is invalid or expired. Please update the token and try again."
+        assert str(e.value) == expected
 
 class TestNameScoring:
     def test_score_names_same(self):

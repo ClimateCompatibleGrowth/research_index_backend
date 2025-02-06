@@ -38,21 +38,26 @@ class MetadataFetcher:
         headers = {"Authorization": f"Bearer {self.token}"}
         api_url = f"{config.openaire_api}/search/researchProducts"
 
-        response = self.session.get(api_url + query, headers=headers)
+        try:
+            response = self.session.get(api_url + query, headers=headers)
+            self.logger.debug(f"Response code: {response.status_code}")
+            response.raise_for_status()
 
-        self.logger.debug(f"Response code: {response.status_code}")
-        response.raise_for_status()
+            if error := response.json().get("error"):
+                raise ValueError(error)
 
-        if error := response.json().get("error"):
-            raise ValueError(error)
+            if self.save_json:
+                self._save_json_response(response, "data/json/openaire", doi)
 
-        if self.save_json:
-            self._save_json_response(response, "data/json/openaire", doi)
-
-        if response.json()["response"]["results"]:
-            return response.json()
-        else:
-            raise ValueError(f"DOI {doi} returned no results")
+            if response.json()["response"]["results"]:
+                return response.json()
+            else:
+                raise ValueError(f"DOI {doi} returned no results")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                raise ValueError("OpenAire API token is invalid or expired. Please update the token and try again.") from e
+            else:
+                raise
 
     def get_metadata_from_openalex(self, doi: str) -> Dict:
         """Gets metadata from OpenAlex"""
