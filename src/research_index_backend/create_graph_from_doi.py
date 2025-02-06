@@ -356,6 +356,14 @@ def entry_point(db: Driver) -> None:
     for key, value in metrics.items():
         print(f"{key.ljust(max_key_length)} | {value}")
 
-
+    print("\nProcessing Results:")
+    print(f"• Failed metadata DOIs ({metrics['metadata_failure']}):") 
+    for doi in processed_dois['metadata_failure']:
+        print(f"  - {doi}")
+        
+    print(f"\n• Invalid pattern DOIs ({metrics['invalid_pattern_dois']}):") 
+    for doi in processed_dois['invalid_pattern_dois']:
+        print(f"  - {doi}")
+        
 if __name__ == "__main__":
     entry_point()
