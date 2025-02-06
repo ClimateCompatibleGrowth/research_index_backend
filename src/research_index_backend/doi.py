@@ -88,7 +88,7 @@ class DOIManager:
     """
 
     def __init__(
-        self, list_of_dois: List[str], limit: int, update_metadata: bool = True
+        self, list_of_dois: List[str], limit: int, update_metadata: bool = False
     ) -> None:
 
         self._validate_inputs(list_of_dois, limit, update_metadata)
