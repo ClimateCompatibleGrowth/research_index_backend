@@ -357,7 +357,7 @@ def entry_point(db: Driver) -> None:
         print(f"{key.ljust(max_key_length)} | {value}")
 
     print("\nProcessing Results:")
-    print(f"• Failed metadata DOIs ({metrics['metadata_failure']}):") 
+    print(f"\n• Failed metadata DOIs ({metrics['metadata_failure']}):") 
     for doi in processed_dois['metadata_failure']:
         print(f"  - {doi}")
         
@@ -365,5 +365,9 @@ def entry_point(db: Driver) -> None:
     for doi in processed_dois['invalid_pattern_dois']:
         print(f"  - {doi}")
         
+    print(f"\n• Duplicated Submissions ({metrics['duplicated_submissions']}):")
+    for doi in processed_dois['duplicated_submissions']:
+        print(f"  - {doi}")
+    
 if __name__ == "__main__":
     entry_point()

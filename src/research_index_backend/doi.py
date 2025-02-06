@@ -8,6 +8,7 @@ This module handles:
 """
 
 import time
+from collections import Counter
 from logging import getLogger
 from re import IGNORECASE, compile
 from typing import Dict, List
@@ -201,6 +202,8 @@ class DOIManager:
         processed_dois = (
             self.valid_pattern_dois if self.update_metadata else self.new_dois
         )
+        
+        duplicated_submissions = [doi for doi, count in Counter(self.list_of_dois).items() if count > 1]
 
         metadata_pass = [
             doi
@@ -240,6 +243,7 @@ class DOIManager:
         ]
         metrics = {
             "submitted_dois": len(self.list_of_dois),
+            "duplicated_submissions": len(duplicated_submissions),
             "processed_dois": len(processed_dois),
             "new_dois": self.num_new_dois,
             "existing_dois": self.num_existing_dois,
@@ -256,6 +260,7 @@ class DOIManager:
 
         doi_states = {
             "submitted_dois": self.list_of_dois,
+            "duplicated_submissions": duplicated_submissions,
             "processed_dois": processed_dois,
             "new_dois": self.new_dois,
             "existing_dois": self.existing_dois,
