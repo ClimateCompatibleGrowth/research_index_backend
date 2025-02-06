@@ -13,11 +13,9 @@
 """
 
 import argparse
-from collections import defaultdict
 from difflib import SequenceMatcher
 from logging import DEBUG, basicConfig, getLogger
 from os.path import join
-from re import IGNORECASE, compile
 from typing import Dict, List
 from uuid import uuid4
 
@@ -28,15 +26,11 @@ from tqdm import tqdm
 
 from .config import config
 from .create_graph import load_initial_data
-from .get_metadata import (
-    get_metadata_from_openaire,
-    get_metadata_from_openalex,
-)
+from .doi import DOIManager
+from .get_metadata import MetadataFetcher
 from .models import AnonymousArticle, Article, Author
 from .parser import parse_metadata
 from .session import connect_to_db
-
-TOKEN = config.token
 
 MG_HOST = config.mg_host
 MG_PORT = config.mg_port
@@ -54,50 +48,6 @@ basicConfig(
     encoding="utf-8",
     level=DEBUG,
 )
-
-
-# Use regex pattern from
-# https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-PATTERN = compile("10\\.\\d{4,9}/[-._;()/:A-Z0-9]+$", IGNORECASE)
-
-
-def validate_dois(list_of_dois: List) -> Dict[str, List]:
-    """Validate DOIs"""
-
-    dois = defaultdict(list)
-    # Iterate over the list of possible DOIs and return valid, otherwise raise
-    # a warning
-    for doi in list_of_dois:
-        if not doi == "":
-            search = PATTERN.search(doi)
-            if search:
-                logger.info(f"{search.group()} is a valid DOI.")
-                dois["valid"].append(search.group())
-            else:
-                logger.warning(f"{doi} is not a DOI.")
-                dois["invalid"].append(doi)
-
-    return dois
-
-
-def get_output_metadata(
-    session: requests_cache.CachedSession, doi: str, source: str = "OpenAire"
-) -> Dict:
-    """Request metadata from OpenAire Graph
-
-    Arguments
-    ---------
-    session: CachedSession
-    doi: str
-    source: str, default='OpenAire'
-        The API to connect to
-    """
-    if source == "OpenAire":
-        return get_metadata_from_openaire(session, doi, TOKEN)
-    elif source == "OpenAlex":
-        return get_metadata_from_openalex(session, doi)
-    else:
-        raise ValueError("Incorrect argument for output metadata source")
 
 
 @connect_to_db
@@ -195,7 +145,7 @@ def check_upload_author(db: Driver, author: Dict) -> Author:
         name_author = author["first_name"] + " " + author["last_name"]
         score = score_name_similarity(name_results, name_author)
         if score < ORCID_NAME_SIMILARITY_THRESHOLD:
-            logger.warning(error_message + f". Ratio: {score}")
+            logger.warning(f"{error_message}. Ratio: {score}")
             results = match_author_name(author)
     else:
         # Try a match on full name, or create new node
@@ -242,57 +192,100 @@ def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
     return True
 
 
-def main(list_of_dois) -> bool:
-    """ """
+def main(list_of_dois: list, limit: int, update_metadata: bool, write_metadata: bool):
+    try:
+        doi_manager = DOIManager(
+            list_of_dois, limit=limit, update_metadata=update_metadata
+        )
 
-    dois = validate_dois(list_of_dois)
-    valid_dois = dois["valid"]
+        doi_manager.start_ingestion()
+        doi_manager.validate_dois()
+        if not doi_manager.update_metadata and not doi_manager.num_new_dois:
+            logger.warning(
+                "No new DOIs to process or valid existing DOIs to update."
+            )
+            doi_manager.end_ingestion()
+            return doi_manager
+    except Exception as e:
+        logger.error(f"Error validating DOIs: {e}")
+        raise e
 
     session = requests_cache.CachedSession("doi_cache", expire_after=30)
+    metadata_fetcher = MetadataFetcher(session, save_json=write_metadata)
 
-    for valid_doi in tqdm(valid_dois):
+    for doi in tqdm(doi_manager.doi_tracker):
+        if (
+            doi_manager.doi_tracker[doi].already_exists
+            and not doi_manager.update_metadata
+        ):
+            logger.info(f"DOI {doi} already exists in the database.")
+            continue
         try:
-            openalex_metadata = get_output_metadata(
-                session, valid_doi, "OpenAlex"
+            openalex_metadata = metadata_fetcher.get_output_metadata(
+                doi, source="OpenAlex"
             )
+            doi_manager.doi_tracker[doi].openalex_metadata = True
         except ValueError as ex:
-            logger.error(
-                f"No OpenAlex metadata found for doi {valid_doi}: {ex}"
-            )
+            logger.error(f"No OpenAlex metadata found for doi {doi}: {ex}")
             openalex_metadata = {"id": None}
         try:
-            metadata = get_output_metadata(session, valid_doi, "OpenAire")
+            metadata = metadata_fetcher.get_output_metadata(
+                doi, source="OpenAire"
+            )
+            doi_manager.doi_tracker[doi].openaire_metadata = True
         except ValueError as ex:
-            logger.error(
-                f"No OpenAire metadata found for doi {valid_doi}: {ex}"
-            )
+            logger.error(f"No OpenAire metadata found for doi {doi}: {ex}")
         else:
-            outputs_metadata = parse_metadata(
-                metadata, valid_doi, openalex_metadata
-            )
+            outputs_metadata = parse_metadata(metadata, doi, openalex_metadata)
             for output in outputs_metadata:
                 try:
                     result = upload_article_to_memgraph(output)
+                    doi_manager.doi_tracker[doi].ingestion_success = True
                 except DatabaseError as ex:
                     logger.error(f"Error uploading {output.doi} to Memgraph")
                     logger.error(f"{ex}")
                     logger.debug(output)
                     raise ex
                 if result:
-                    logger.info(f"Upload {valid_doi} successful")
+                    logger.info(f"Upload {doi} successful")
                 else:
-                    logger.warning(f"Upload {valid_doi} failed")
-
-    return True
+                    logger.warning(f"Upload {doi} failed")
+    doi_manager.end_ingestion()
+    return doi_manager
 
 
 def argument_parser():
-
-    parser = argparse.ArgumentParser()
-    help = "Provide the path to CSV file containing a list of dois"
-    parser.add_argument("list_of_dois", help=help)
-    help = "Deletes any existing data and creates a new database"
-    parser.add_argument("--initialise", action="store_true", help=help)
+    parser = argparse.ArgumentParser(
+        description="Process DOIs and create/update a graph database"
+    )
+    parser.add_argument(
+        "list_of_dois", help="Path to CSV file containing list of DOIs"
+    )
+    parser.add_argument(
+        "-i",
+        "--initialise",
+        action="store_true",
+        help="Delete existing data and create new database",
+    )
+    parser.add_argument(
+        "-l",
+        "--limit",
+        type=int,
+        default=50,
+        help="Limit number of DOIs to process (default: 50)",
+    )
+    parser.add_argument(
+        "-u",
+        "--update-metadata",
+        action="store_true",
+        help="Update metadata for existing DOIs",
+    )
+    parser.add_argument(
+        "-w",
+        "--write-metadata",
+        action="store_true",
+        help="Store metadata in JSON files",
+    )
     return parser.parse_args()
 
 
@@ -335,7 +328,7 @@ def add_country_relations(db: Driver):
 
 
 @connect_to_db
-def entry_point(db: Driver):
+def entry_point(db: Driver) -> None:
     """This is the console entry point to the programme"""
 
     args = argument_parser()
@@ -350,14 +343,31 @@ def entry_point(db: Driver):
         logger.info("Deleted graph")
         load_initial_data(join("data", "init"))
 
-    result = main(list_of_dois)
+    doi_manager = main(list_of_dois, limit=args.limit, update_metadata=args.update_metadata,
+    write_metadata=args.write_metadata)
     add_country_relations()
+    metrics, processed_dois = doi_manager.ingestion_metrics()
 
-    if result:
-        print("Success")
+    logger.info(f"Report: {metrics}, {processed_dois}")
 
+    max_key_length = max(len(key) for key in metrics.keys())
+    print(f"{'Metric'.ljust(max_key_length)} | Value")
+    print("-" * (max_key_length + 9))
+    for key, value in metrics.items():
+        print(f"{key.ljust(max_key_length)} | {value}")
 
+    print("\nProcessing Results:")
+    print(f"\n• Failed metadata DOIs ({metrics['metadata_failure']}):") 
+    for doi in processed_dois['metadata_failure']:
+        print(f"  - {doi}")
+        
+    print(f"\n• Invalid pattern DOIs ({metrics['invalid_pattern_dois']}):") 
+    for doi in processed_dois['invalid_pattern_dois']:
+        print(f"  - {doi}")
+        
+    print(f"\n• Duplicated Submissions ({metrics['duplicated_submissions']}):")
+    for doi in processed_dois['duplicated_submissions']:
+        print(f"  - {doi}")
+    
 if __name__ == "__main__":
-
-    if result := entry_point():
-        print("Success")
+    entry_point()
