@@ -112,12 +112,12 @@ def parse_metadata(
             for x in title_meta:
                 count += 1
                 if x["@classid"] == "main title":
-                    title = x["$"]
+                    title = clean_html(x["$"])
                     break
                 else:
                     pass
         else:
-            title = title_meta["$"]
+            title = clean_html(title_meta["$"])
         logger.info(f"Parsing output {title}")
 
         publisher = entity.get("publisher", None)
@@ -178,6 +178,9 @@ def parse_metadata(
 
         issue = None
         volume = None
+        publication_year = None
+        publication_month = None
+        publication_day = None
 
         # Get the acceptance date:
         date_of_acceptance = entity.get("dateofacceptance", None)

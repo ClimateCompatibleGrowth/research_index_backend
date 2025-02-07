@@ -1,91 +1,96 @@
 from json import JSONDecodeError, dump
 from logging import DEBUG, basicConfig, getLogger
 from os import makedirs
+from typing import Dict
 
 import requests
 import requests_cache
 
 from .config import config
 
-logger = getLogger(__name__)
-basicConfig(
-    filename="research_index_backend.log",
-    filemode="w",
-    encoding="utf-8",
-    level=DEBUG,
-)
 
+class MetadataFetcher:
+    def __init__(
+        self,
+        session: requests_cache.CachedSession,
+        token: str = "",
+        save_json: bool = False,
+    ):
+        self.session = session
+        self.save_json = save_json
+        self.logger = getLogger(__name__)
+        basicConfig(
+            filename="research_index_backend.log",
+            filemode="w",
+            encoding="utf-8",
+            level=DEBUG,
+        )
 
-def get_metadata_from_openaire(
-    session: requests_cache.CachedSession, doi: str, token
-):
-    """Gets metadata from OpenAire
-
-    Arguments
-    ---------
-    session: CachedSession
-    doi: str
-
-    Returns
-    -------
-    """
-    query = f"?format=json&doi={doi}"
-    headers = {"Authorization": f"Bearer {token}"}
-    api_url = f"{config.openaire_api}/search/researchProducts"
-
-    response = session.get(api_url + query, headers=headers)
-
-    logger.debug(f"Response code: {response.status_code}")
-    response.raise_for_status()
-
-    if error := response.json().get("error"):
-        raise ValueError(error)
-
-    clean_doi = doi.replace("/", "")
-    directory = "data/json/openaire"
-    makedirs(directory, exist_ok=True)
-
-    with open(f"data/json/openaire/{clean_doi}.json", "w") as json_file:
-        try:
-            dump(response.json(), json_file)
-        except JSONDecodeError as ex:
-            logger.error(str(ex))
-    if response.json()["response"]["results"]:
-        return response.json()
-    else:
-        raise ValueError(f"DOI {doi} returned no results")
-
-
-def get_metadata_from_openalex(session, doi):
-    """Gets metadata from OpenAlex
-
-    Arguments
-    ---------
-    session: CachedSession
-    doi: str
-
-    Returns
-    -------
-    """
-
-    logger.info(f"Requesting {doi} from OpenAlex")
-    query = f"doi:{doi}?mailto=wusher@kth.se"
-    api_url = "https://api.openalex.org/works/"
-    response = session.get(api_url + query)
-    directory = "data/json/openalex"
-    makedirs(directory, exist_ok=True)
-    try:
-        response.raise_for_status()
+    def _save_json_response(self, response, directory: str, doi: str) -> None:
+        """Helper method to save JSON responses"""
         clean_doi = doi.replace("/", "")
-        with open(f"data/json/openalex/{clean_doi}.json", "w") as json_file:
+        makedirs(directory, exist_ok=True)
+
+        with open(f"{directory}/{clean_doi}.json", "w") as json_file:
             try:
                 dump(response.json(), json_file)
             except JSONDecodeError as ex:
-                logger.error(str(ex))
-    except requests.exceptions.HTTPError as err:
-        logger.error(str(err))
+                self.logger.error(str(ex))
 
-    if response.json():
-        return response.json()
-    else:
-        raise ValueError(f"DOI {doi} returned no results")
+    def get_metadata_from_openaire(self, doi: str) -> Dict:
+        """Gets metadata from OpenAire"""
+        query = f"?format=json&doi={doi}"
+        headers = {"Authorization": f"Bearer {config.token}"}
+        api_url = f"{config.openaire_api}/search/researchProducts"
+
+        try:
+            response = self.session.get(api_url + query, headers=headers)
+            self.logger.debug(f"Response code: {response.status_code}")
+            response.raise_for_status()
+
+            if error := response.json().get("error"):
+                raise ValueError(error)
+
+            if self.save_json:
+                self._save_json_response(response, "data/json/openaire", doi)
+
+            if response.json()["response"]["results"]:
+                return response.json()
+            else:
+                raise ValueError(f"DOI {doi} returned no results")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                raise ValueError(
+                    "OpenAire refresh token is invalid or expired. Please update token and try again."
+                ) from e
+            else:
+                raise
+
+    def get_metadata_from_openalex(self, doi: str) -> Dict:
+        """Gets metadata from OpenAlex"""
+        self.logger.info(f"Requesting {doi} from OpenAlex")
+        query = f"doi:{doi}?mailto=wusher@kth.se"
+        api_url = "https://api.openalex.org/works/"
+
+        response = self.session.get(api_url + query)
+
+        try:
+            response.raise_for_status()
+            if self.save_json:
+                self._save_json_response(response, "data/json/openalex", doi)
+        except requests.exceptions.HTTPError as err:
+            self.logger.error(str(err))
+
+        if response.json():
+            return response.json()
+        else:
+            raise ValueError(f"DOI {doi} returned no results")
+
+    def get_output_metadata(self, doi: str, source: str = "OpenAire") -> Dict:
+        """Request metadata from specified source"""
+        if source == "OpenAire":
+            return self.get_metadata_from_openaire(doi)
+        elif source == "OpenAlex":
+            return self.get_metadata_from_openalex(doi)
+        else:
+            raise ValueError("Incorrect argument for output metadata source")

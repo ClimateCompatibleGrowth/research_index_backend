@@ -10,6 +10,8 @@ neo4j_log.setLevel(logging.CRITICAL)
 
 MG_HOST = config.mg_host
 MG_PORT = config.mg_port
+MG_USER = config.mg_user
+MG_PASS = config.mg_pass
 
 
 def connect_to_db(f):
@@ -18,7 +20,7 @@ def connect_to_db(f):
 
         try:
             URI = f"bolt://{MG_HOST}:{MG_PORT}"
-            AUTH = ("", "")
+            AUTH = (MG_USER, MG_PASS)
             with GraphDatabase.driver(URI, auth=AUTH) as db:
                 db.verify_connectivity()
                 return f(*args, db, **kwargs)
