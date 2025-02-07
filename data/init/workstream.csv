@@ -8,7 +8,7 @@ np_zambia,Zambia,National Partnerships Zambia,Zambia
 oa1,Output Area 1,Partnerships,
 oa2,Output Area 2,Core Research,
 oa3,Output Area 3,"Platform, Management and Monitoring, Evaluation and Learning",
-ws1,National Partnerships,,
+ws1,National Partnerships,,Partnerships
 ws2_ipa01,ADB-CCG Central,,Partnerships
 ws2_ipa02,Sum4All-Secratariate,,Partnerships
 ws2_ipa03,WBG-CCG Central,,Partnerships
@@ -30,5 +30,5 @@ ws5,Economics & Policy,,Economics & Policy
 ws5a,Policies for CCG,,Economics & Policy
 ws5b,Decarbonising Transport,,Transport
 ws5c,Investment Pipelines,,Finance
-ws7a,Platform,,Data
-ws7b,Management,,
+ws7a,Platform,,"Data Governance and Infrastructure"
+ws7b,Management,,"Project Management"
