@@ -17,7 +17,6 @@ class MetadataFetcher:
         save_json: bool = False,
     ):
         self.session = session
-        self.token = token or config.token
         self.save_json = save_json
         self.logger = getLogger(__name__)
         basicConfig(
@@ -41,7 +40,7 @@ class MetadataFetcher:
     def get_metadata_from_openaire(self, doi: str) -> Dict:
         """Gets metadata from OpenAire"""
         query = f"?format=json&doi={doi}"
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {config.token}"}
         api_url = f"{config.openaire_api}/search/researchProducts"
 
         try:
@@ -62,7 +61,7 @@ class MetadataFetcher:
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
                 raise ValueError(
-                    "OpenAire API token is invalid or expired. Please update the token and try again."
+                    "OpenAire refresh token is invalid or expired. Please update token and try again."
                 ) from e
             else:
                 raise

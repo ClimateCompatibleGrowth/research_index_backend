@@ -42,7 +42,7 @@ class TestMetadataFetcher403:
     def test_api_403_response(self, session, monkeypatch):
         monkeypatch.setattr(session, "get", dummy_get_403)
         with pytest.raises(ValueError) as e:
-            MetadataFetcher(session=session)
+            MetadataFetcher(session=session).get_metadata_from_openaire("doi")
         expected = "OpenAire refresh token is invalid or expired. Please update token and try again."
         assert str(e.value) == expected
 
