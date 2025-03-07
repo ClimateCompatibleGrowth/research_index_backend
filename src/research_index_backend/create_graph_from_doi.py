@@ -192,7 +192,9 @@ def upload_article_to_memgraph(output: AnonymousArticle) -> bool:
     return True
 
 
-def main(list_of_dois: list, limit: int, update_metadata: bool, write_metadata: bool):
+def main(
+    list_of_dois: list, limit: int, update_metadata: bool, write_metadata: bool
+):
     try:
         doi_manager = DOIManager(
             list_of_dois, limit=limit, update_metadata=update_metadata
@@ -343,8 +345,12 @@ def entry_point(db: Driver) -> None:
         logger.info("Deleted graph")
         load_initial_data(join("data", "init"))
 
-    doi_manager = main(list_of_dois, limit=args.limit, update_metadata=args.update_metadata,
-    write_metadata=args.write_metadata)
+    doi_manager = main(
+        list_of_dois,
+        limit=args.limit,
+        update_metadata=args.update_metadata,
+        write_metadata=args.write_metadata,
+    )
     add_country_relations()
     metrics, processed_dois = doi_manager.ingestion_metrics()
 
@@ -357,17 +363,18 @@ def entry_point(db: Driver) -> None:
         print(f"{key.ljust(max_key_length)} | {value}")
 
     print("\nProcessing Results:")
-    print(f"\n• Failed metadata DOIs ({metrics['metadata_failure']}):") 
-    for doi in processed_dois['metadata_failure']:
+    print(f"\n• Failed metadata DOIs ({metrics['metadata_failure']}):")
+    for doi in processed_dois["metadata_failure"]:
         print(f"  - {doi}")
-        
-    print(f"\n• Invalid pattern DOIs ({metrics['invalid_pattern_dois']}):") 
-    for doi in processed_dois['invalid_pattern_dois']:
+
+    print(f"\n• Invalid pattern DOIs ({metrics['invalid_pattern_dois']}):")
+    for doi in processed_dois["invalid_pattern_dois"]:
         print(f"  - {doi}")
-        
+
     print(f"\n• Duplicated Submissions ({metrics['duplicated_submissions']}):")
-    for doi in processed_dois['duplicated_submissions']:
+    for doi in processed_dois["duplicated_submissions"]:
         print(f"  - {doi}")
-    
+
+
 if __name__ == "__main__":
     entry_point()
