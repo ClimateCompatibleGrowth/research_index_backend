@@ -223,7 +223,9 @@ def main(
             logger.info(f"DOI {doi} already exists in the database.")
             continue
         try:
-            openalex_metadata = metadata_fetcher.get_metadata_from_openalex(doi)
+            openalex_metadata = metadata_fetcher.get_metadata_from_openalex(
+                doi
+            )
             doi_manager.doi_tracker[doi].openalex_metadata = True
         except ValueError as ex:
             logger.error(f"No OpenAlex metadata found for doi {doi}: {ex}")
