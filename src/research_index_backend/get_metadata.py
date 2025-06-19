@@ -1,7 +1,7 @@
 from json import JSONDecodeError, dump
 from logging import DEBUG, basicConfig, getLogger
 from os import makedirs
-from typing import Dict
+from typing import Dict, Union
 
 import requests
 import requests_cache
@@ -37,7 +37,7 @@ class MetadataFetcher:
             except JSONDecodeError as ex:
                 self.logger.error(str(ex))
 
-    def get_metadata_from_openaire(self, doi: str) -> Dict:
+    def get_metadata_from_openaire(self, doi: str) -> list:
         """Gets metadata from OpenAire"""
         params = {"pid": doi}
         headers = {"Authorization": f"Bearer {config.token}"}
@@ -63,13 +63,13 @@ class MetadataFetcher:
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
                 raise ValueError(
-                    "OpenAire refresh token is invalid or expired. \
-                     Please update token and try again."
+                    "OpenAire refresh token is invalid or expired. "
+                    + "Please update token and try again."
                 ) from e
             else:
                 raise
 
-    def get_metadata_from_openalex(self, doi: str) -> Dict:
+    def get_metadata_from_openalex(self, doi: str) -> list:
         """Gets metadata from OpenAlex"""
         self.logger.info(f"Requesting {doi} from OpenAlex")
         query = f"doi:{doi}?mailto=wusher@kth.se"
@@ -84,12 +84,16 @@ class MetadataFetcher:
         except requests.exceptions.HTTPError as err:
             self.logger.error(str(err))
 
-        if response.json():
-            return response.json()
+        header, results = response.json().values()
+
+        if results:
+            return results
         else:
             raise ValueError(f"DOI {doi} returned no results")
 
-    def get_output_metadata(self, doi: str, source: str = "OpenAire") -> Dict:
+    def get_output_metadata(
+        self, doi: str, source: str = "OpenAire"
+    ) -> Union[list, Dict]:
         """Request metadata from specified source"""
         if source == "OpenAire":
             return self.get_metadata_from_openaire(doi)
