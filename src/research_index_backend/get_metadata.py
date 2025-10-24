@@ -39,9 +39,9 @@ class MetadataFetcher:
 
     def get_metadata_from_openaire(self, doi: str) -> Dict:
         """Gets metadata from OpenAire"""
-        query = f"?format=json&doi={doi}"
+        query = f"?originalId={doi}"
         headers = {"Authorization": f"Bearer {config.token}"}
-        api_url = f"{config.openaire_api}/search/researchProducts"
+        api_url = f"{config.openaire_api}/researchProducts"
 
         try:
             response = self.session.get(api_url + query, headers=headers)
@@ -54,7 +54,7 @@ class MetadataFetcher:
             if self.save_json:
                 self._save_json_response(response, "data/json/openaire", doi)
 
-            if response.json()["response"]["results"]:
+            if response.json()["results"]:
                 return response.json()
             else:
                 raise ValueError(f"DOI {doi} returned no results")
