@@ -1,0 +1,1190 @@
+{
+  "header": {
+    "maxScore": 1.0,
+    "numFound": 1,
+    "page": 1,
+    "pageSize": 10,
+    "queryTime": 468
+  },
+  "results": [
+    {
+      "authors": [
+        {
+          "fullName": "Allington, Lucy",
+          "name": "Lucy",
+          "pid": {
+            "id": {
+              "scheme": "orcid_pending",
+              "value": "0000-0003-1801-899x"
+            },
+            "provenance": null
+          },
+          "rank": 1,
+          "surname": "Allington"
+        }
+      ],
+      "bestAccessRight": {
+        "code": "c_abf2",
+        "label": "OPEN",
+        "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+      },
+      "codeRepositoryUrl": null,
+      "collectedFrom": [
+        {
+          "key": "openaire____::9e3be59865b2c1c335d32dae2fe7b254",
+          "value": "Datacite"
+        },
+        {
+          "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+          "value": "ZENODO"
+        }
+      ],
+      "communities": [
+        {
+          "code": "eosc",
+          "label": "EOSC",
+          "provenance": null
+        },
+        {
+          "code": "uarctic",
+          "label": "UArctic",
+          "provenance": null
+        }
+      ],
+      "contactGroups": null,
+      "contactPeople": null,
+      "container": null,
+      "contributors": null,
+      "countries": null,
+      "coverages": null,
+      "dateOfCollection": null,
+      "descriptions": [
+        "A starter data kit for Liberia"
+      ],
+      "documentationUrls": null,
+      "embargoEndDate": null,
+      "formats": null,
+      "geoLocations": null,
+      "id": "doi_dedup___::b8848e8a40afe94345231538d752e163",
+      "indicators": {
+        "citationImpact": {
+          "citationClass": "C5",
+          "citationCount": 0.0,
+          "impulse": 0.0,
+          "impulseClass": "C5",
+          "influence": 2.5942106E-9,
+          "influenceClass": "C5",
+          "popularity": 1.9034052E-9,
+          "popularityClass": "C5"
+        },
+        "usageCounts": {
+          "downloads": 3,
+          "views": 9
+        }
+      },
+      "instances": [
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "collectedFrom": {
+            "key": "openaire____::9e3be59865b2c1c335d32dae2fe7b254",
+            "value": "Datacite"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC 0",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.4756708"
+            }
+          ],
+          "publicationDate": "2021-05-13",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "https://dx.doi.org/10.5281/zenodo.4756708"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "alternateIdentifiers": [
+            {
+              "scheme": "oai",
+              "value": "oai:zenodo.org:4756708"
+            }
+          ],
+          "collectedFrom": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC 0",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.4756708"
+            }
+          ],
+          "publicationDate": "2021-05-13",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "http://dx.doi.org/10.5281/zenodo.4756708"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "collectedFrom": {
+            "key": "openaire____::9e3be59865b2c1c335d32dae2fe7b254",
+            "value": "Datacite"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC 0",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.4650795"
+            }
+          ],
+          "publicationDate": "2021-03-31",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "https://dx.doi.org/10.5281/zenodo.4650795"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "alternateIdentifiers": [
+            {
+              "scheme": "oai",
+              "value": "oai:zenodo.org:4650795"
+            }
+          ],
+          "collectedFrom": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC 0",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.4650795"
+            }
+          ],
+          "publicationDate": "2021-03-31",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "http://dx.doi.org/10.5281/zenodo.4650795"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "collectedFrom": {
+            "key": "openaire____::9e3be59865b2c1c335d32dae2fe7b254",
+            "value": "Datacite"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC BY",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.4650794"
+            }
+          ],
+          "publicationDate": "2023-01-16",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "https://dx.doi.org/10.5281/zenodo.4650794"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "collectedFrom": {
+            "key": "openaire____::9e3be59865b2c1c335d32dae2fe7b254",
+            "value": "Datacite"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC BY",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.7539162"
+            }
+          ],
+          "publicationDate": "2023-01-16",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "https://dx.doi.org/10.5281/zenodo.7539162"
+          ]
+        },
+        {
+          "accessRight": {
+            "code": "c_abf2",
+            "label": "OPEN",
+            "openAccessRoute": null,
+            "scheme": "http://vocabularies.coar-repositories.org/documentation/access_rights/"
+          },
+          "alternateIdentifiers": [
+            {
+              "scheme": "oai",
+              "value": "oai:zenodo.org:7539162"
+            }
+          ],
+          "collectedFrom": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "hostedBy": {
+            "key": "opendoar____::358aee4cc897452c00244351e4d91f69",
+            "value": "ZENODO"
+          },
+          "license": "CC BY",
+          "pids": [
+            {
+              "scheme": "doi",
+              "value": "10.5281/zenodo.7539162"
+            }
+          ],
+          "publicationDate": "2023-01-16",
+          "refereed": "nonPeerReviewed",
+          "type": "Dataset",
+          "urls": [
+            "http://dx.doi.org/10.5281/zenodo.7539162"
+          ]
+        }
+      ],
+      "isGreen": null,
+      "isInDiamondJournal": null,
+      "language": {
+        "code": "eng",
+        "label": "English"
+      },
+      "lastUpdateTimeStamp": null,
+      "mainTitle": "CCG Starter Data Kit: Liberia",
+      "openAccessColor": null,
+      "organizations": [
+        {
+          "acronym": "UCL",
+          "id": "openorgs____::f031b1a0bb3f7636ff6fbdfa79fd5dec",
+          "legalName": "University College London",
+          "pids": [
+            {
+              "scheme": "FundRef",
+              "value": "501100001281"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "52029"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001283"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100006637"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999864749"
+            },
+            {
+              "scheme": "HESA",
+              "value": "0149"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999852333"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/02jx3x895"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "UK0123"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000845"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100006154"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10007784"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10007781"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100008538"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001282"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100013915"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001285"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000765"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q193196"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:nlx_86831"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000685"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "531066"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.83440.3b"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "1131835"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "45129253"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "3348837"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999975620"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000121901201"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:SCR_011603"
+            },
+            {
+              "scheme": "UCAS",
+              "value": "U80"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000845"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10007766"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001299"
+            }
+          ]
+        },
+        {
+          "acronym": "KTH",
+          "id": "openorgs____::7501d66d2297a963ebfb075c43fff88e",
+          "legalName": "Royal Institute of Technology",
+          "pids": [
+            {
+              "scheme": "ISNI",
+              "value": "0000000121581746"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.5037.1"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "86987016"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q854280"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999990946"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "SE0008"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100004270"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:SCR_000992"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/026vcq606"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "25609"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:nlx_48999"
+            }
+          ]
+        },
+        {
+          "acronym": "University of Cambridge",
+          "id": "openorgs____::b03ae6770284a0dfaca038c0f8193048",
+          "legalName": "University of Cambridge",
+          "pids": [
+            {
+              "scheme": "FundRef",
+              "value": "501100004537"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "UK0020"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000710"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "31805"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "100010441"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100004222"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "26015915"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000591"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "239420"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "2793352"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000742"
+            },
+            {
+              "scheme": "UCAS",
+              "value": "C0121"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "73199"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000663"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "480151"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000653"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "180326"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.5335.0"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "1167853"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000121885934"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100006646"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "498109"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "327748"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "151267"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000590"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q35794"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/013meh722"
+            },
+            {
+              "scheme": "HESA",
+              "value": "0114"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100007552"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000602"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q24679079"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "457564"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100004495"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000609"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000603"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:nlx_31670"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100008420"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "31803"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "241749"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000705"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000735"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100005962"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "157283"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "201369"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000727"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000644"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:SCR_000996"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10007788"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000580"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100005796"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "7317906"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001625"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "23747745"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "498120"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q10899168"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100006299"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100003987"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100005705"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000587"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "25978572"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "48671"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q181892"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000648"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000622"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000585"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "75963"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000621"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "212179"
+            }
+          ]
+        },
+        {
+          "acronym": "Loughborough University",
+          "id": "openorgs____::276882186c235f87bab02e2a0b714705",
+          "legalName": "Loughborough University",
+          "pids": [
+            {
+              "scheme": "ISNI",
+              "value": "0000000419368542"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:SCR_011350"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/04vg4w365"
+            },
+            {
+              "scheme": "UCAS",
+              "value": "L79"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.6571.5"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "338982"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000857"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q1434547"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10004113"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "UK0077"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000634"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:nlx_158227"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "143804889"
+            },
+            {
+              "scheme": "HESA",
+              "value": "0152"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999990752"
+            }
+          ]
+        },
+        {
+          "acronym": "UCC",
+          "id": "openorgs____::b8b8ca674452579f3f593d9f5e557483",
+          "legalName": "University College Cork",
+          "pids": [
+            {
+              "scheme": "Wikidata",
+              "value": "Q16902157"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "27577105"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000123318773"
+            },
+            {
+              "scheme": "PIC",
+              "value": "999975717"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "738094"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q1574185"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "IE0002"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100001636"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.7872.a"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/03265fv13"
+            }
+          ]
+        },
+        {
+          "acronym": "IEA",
+          "id": "openorgs____::7abe320859f250131bb347056016fb46",
+          "legalName": "International Energy Agency",
+          "pids": [
+            {
+              "scheme": "mag_id",
+              "value": "159082835"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/020frhs78"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.435668.a"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100015271"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000121060676"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q826700"
+            }
+          ]
+        },
+        {
+          "acronym": "CyI",
+          "id": "openorgs____::3d1ea5562daee084d77227f58d2eb216",
+          "legalName": "Cyprus Institute",
+          "pids": [
+            {
+              "scheme": "OrgRef",
+              "value": "22382061"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "148518341"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "CY0039"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/01q8k8p90"
+            },
+            {
+              "scheme": "PIC",
+              "value": "965934440"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.426429.f"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q7728557"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000405803152"
+            }
+          ]
+        },
+        {
+          "acronym": "Imperial College London",
+          "id": "openorgs____::778fb8061fc9d6356293bec4c38fb72f",
+          "legalName": "Imperial College London",
+          "pids": [
+            {
+              "scheme": "UCAS",
+              "value": "I50"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "47508984"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.7445.2"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/041kmwe10"
+            },
+            {
+              "scheme": "ISNI",
+              "value": "0000000121138111"
+            },
+            {
+              "scheme": "UKPRN",
+              "value": "10003270"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "61116"
+            },
+            {
+              "scheme": "OrgReg",
+              "value": "UK0053"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "2244827"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q189022"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000850"
+            },
+            {
+              "scheme": "HESA",
+              "value": "0132"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:SCR_011293"
+            },
+            {
+              "scheme": "RRID",
+              "value": "RRID:nlx_21884"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100000761"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "2244729"
+            }
+          ]
+        },
+        {
+          "acronym": "UFOP",
+          "id": "openorgs____::a728cd6a528330724118096476919305",
+          "legalName": "Universidade Federal de Ouro Preto",
+          "pids": [
+            {
+              "scheme": "ISNI",
+              "value": "0000000404884317"
+            },
+            {
+              "scheme": "mag_id",
+              "value": "10824318"
+            },
+            {
+              "scheme": "ROR",
+              "value": "https://ror.org/056s65p46"
+            },
+            {
+              "scheme": "Wikidata",
+              "value": "Q6741204"
+            },
+            {
+              "scheme": "OrgRef",
+              "value": "38766892"
+            },
+            {
+              "scheme": "FundRef",
+              "value": "501100009730"
+            },
+            {
+              "scheme": "GRID",
+              "value": "grid.411213.4"
+            }
+          ]
+        }
+      ],
+      "originalIds": [
+        "50|datacite____::2cb78aa6b21092cd0172764a3117ecdc",
+        "10.5281/zenodo.4756708",
+        "oai:zenodo.org:4756708",
+        "50|od______2659::5e532a80448fbbcbfa3b0e71cfc072de",
+        "50|datacite____::a8bf24a1fc72533ab311fa0c626af9ce",
+        "10.5281/zenodo.4650795",
+        "oai:zenodo.org:4650795",
+        "50|od______2659::22edb408c78fbadaf591df0218915805",
+        "50|datacite____::b8848e8a40afe94345231538d752e163",
+        "10.5281/zenodo.4650794",
+        "50|datacite____::cb5b58e6a5bdc32eacc1576a248d89b2",
+        "10.5281/zenodo.7539162",
+        "50|od______2659::001ee175ee6dd1a6e280f919f7aa6120",
+        "oai:zenodo.org:7539162"
+      ],
+      "pids": [
+        {
+          "scheme": "doi",
+          "value": "10.5281/zenodo.4756708"
+        },
+        {
+          "scheme": "doi",
+          "value": "10.5281/zenodo.4650795"
+        },
+        {
+          "scheme": "doi",
+          "value": "10.5281/zenodo.4650794"
+        },
+        {
+          "scheme": "doi",
+          "value": "10.5281/zenodo.7539162"
+        }
+      ],
+      "programmingLanguage": null,
+      "projects": null,
+      "publicationDate": "2021-03-31",
+      "publiclyFunded": null,
+      "publisher": "Zenodo",
+      "size": null,
+      "sources": null,
+      "subjects": [
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "GNUMathProg"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "energy system modelling"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "linear programming"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "GLPK"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "Liberia"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "OSeMOSYS"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "clicSAND"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "energy"
+          }
+        },
+        {
+          "provenance": null,
+          "subject": {
+            "scheme": "keyword",
+            "value": "#CCG"
+          }
+        }
+      ],
+      "subTitle": null,
+      "tools": null,
+      "type": "dataset",
+      "version": "v1.1.0"
+    }
+  ]
+}
