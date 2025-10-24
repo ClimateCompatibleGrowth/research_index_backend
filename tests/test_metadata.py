@@ -5,6 +5,9 @@ These tests call the OpenAire API and require a REFRESH_TOKEN to be defined in t
 Obtain a refresh token from https://develop.openaire.eu/personal-token
 """
 
+import os
+from json import load
+
 import pytest
 from requests.exceptions import HTTPError
 from requests_cache import CachedSession
@@ -45,6 +48,15 @@ class TestMetadataFetcher403:
             MetadataFetcher(session=session).get_metadata_from_openaire("doi")
         expected = "OpenAire refresh token is invalid or expired. Please update token and try again."
         assert str(e.value) == expected
+
+    def test_openaire_v2(self, session):
+        fetcher = MetadataFetcher(session=session)
+        actual = fetcher.get_metadata_from_openaire("10.5281/zenodo.4650794")
+        with open(
+            os.path.join("tests", "fixtures", "openaire_v2.json"), "r"
+        ) as f:
+            expected = load(f)
+        assert actual["results"] == expected["results"]
 
 
 class TestNameScoring:

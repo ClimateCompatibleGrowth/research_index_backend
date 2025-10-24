@@ -25,7 +25,7 @@ class Config:
         )
 
         self.openaire_api: str = os.getenv(
-            "OPENAIRE_API", "https://api.openaire.eu"
+            "OPENAIRE_API", "https://api.openaire.eu/graph/v2"
         )
         self.openaire_service: str = os.getenv(
             "OPENAIRE_SERVICE", "https://services.openaire.eu"

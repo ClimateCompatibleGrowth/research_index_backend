@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import getLogger
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from .models import AnonymousArticle, AnonymousAuthor
 from .utils import clean_html
@@ -15,12 +15,14 @@ def parse_author(metadata: Dict) -> AnonymousAuthor | None:
     ---------
     metadata
     """
-    orcid = metadata.get("@orcid", None)
+    orcid = metadata.get("orcid", None)
     if not orcid:
-        orcid = metadata.get("@orcid_pending", None)
+        pid = metadata.get("pid", None)
+        if pid and pid["id"]["scheme"] in ["orcid", "orcid_pending"]:
+            orcid = pid["id"]["value"]
 
-    first_name = metadata.get("@name", "").title()
-    last_name = metadata.get("@surname", "").title()
+    first_name = metadata.get("name", "").title()
+    last_name = metadata.get("surname", "").title()
     if first_name in last_name:
         last_name = last_name.replace(first_name, "").strip()
     if last_name in first_name:
@@ -53,7 +55,7 @@ def parse_author(metadata: Dict) -> AnonymousAuthor | None:
             first_name = None
             last_name = None
 
-    rank = int(metadata.get("@rank", 1))
+    rank = int(metadata.get("rank", 1))
     logger.info(
         f"Creating author metadata: {first_name} {last_name} {orcid} {rank}"
     )
@@ -68,7 +70,7 @@ def parse_author(metadata: Dict) -> AnonymousAuthor | None:
         return None
 
 
-def parse_result_type(metadata: Dict) -> str:
+def parse_result_type(metadata: Dict) -> Union[str, None]:
     """Extracts the result type from the metadata and returns one of four types
 
     The four types are:
@@ -77,14 +79,18 @@ def parse_result_type(metadata: Dict) -> str:
     - publication
     - other
     """
-    result_type = metadata.get("resulttype", None)
-    if result_type and (result_type["@schemeid"] == "dnet:result_typologies"):
-        result_type = result_type.get("@classid")
-    else:
-        logger.debug(f"Could not identify result type from {result_type}")
-        result_type = None
-
+    result_type = metadata.get("type", None)
     return result_type
+
+
+def parse_date(date_string: str) -> tuple:
+    """Parses a date string into a datetime object"""
+    date_object = datetime.fromisoformat(date_string)
+    year = date_object.year
+    month = date_object.month
+    day = date_object.day
+
+    return (year, month, day)
 
 
 def parse_metadata(
@@ -97,34 +103,16 @@ def parse_metadata(
     For now, this assumes all outputs are journal papers
     """
 
-    length = len(metadata["response"]["results"]["result"])
+    length = len(metadata["results"])
     logger.info(f"There are {length} results")
 
     articles_metadata = []
 
-    for result in metadata["response"]["results"]["result"]:
+    for entity in metadata["results"]:
 
-        entity = result["metadata"]["oaf:entity"]["oaf:result"]
-
-        title_meta = entity["title"]
-        if isinstance(title_meta, list):
-            count = 0
-            for x in title_meta:
-                count += 1
-                if x["@classid"] == "main title":
-                    title = clean_html(x["$"])
-                    break
-                else:
-                    pass
-        else:
-            title = clean_html(title_meta["$"])
-        logger.info(f"Parsing output {title}")
+        title = clean_html(entity["mainTitle"])
 
         publisher = entity.get("publisher", None)
-        if publisher:
-            publisher = publisher["$"]
-        else:
-            publisher = None
 
         journal_meta = entity.get("journal", "")
         if journal_meta:
@@ -136,14 +124,12 @@ def parse_metadata(
         else:
             journal = ""
 
-        abstract = entity.get("description", None)
+        abstract = entity.get("descriptions", None)
         if abstract:
             if isinstance(abstract, list):
                 abstract = abstract[0]
-            if "$" in abstract.keys():
-                abstract = clean_html(abstract["$"])
 
-        authors = entity.get("creator", None)
+        authors = entity.get("authors", None)
 
         all_authors: List[AnonymousAuthor] = []
         if isinstance(authors, list):
@@ -178,20 +164,9 @@ def parse_metadata(
 
         issue = None
         volume = None
-        publication_year = None
-        publication_month = None
-        publication_day = None
 
         # Get the acceptance date:
-        date_of_acceptance = entity.get("dateofacceptance", None)
-        if date_of_acceptance:
-            date = date_of_acceptance.get("$", None)
-            if date:
-
-                date_parts = date.split("-")
-                publication_year = int(date_parts[0])
-                publication_month = int(date_parts[1])
-                publication_day = int(date_parts[-1])
+        year, month, day = parse_date(entity.get("publicationDate", None))
 
         article_object = AnonymousArticle(
             doi=doi,
@@ -201,9 +176,9 @@ def parse_metadata(
             journal=journal,
             issue=issue,
             volume=volume,
-            publication_year=publication_year,
-            publication_month=publication_month,
-            publication_day=publication_day,
+            publication_year=year,
+            publication_month=month,
+            publication_day=day,
             publisher=publisher,
             result_type=result_type,
             resource_type=resource_type,
