@@ -41,6 +41,26 @@ def dummy_get_403(url, headers):
     return DummyResponse()
 
 
+def make_dummy_get_success(fixture_path):
+    """Factory that creates a mock GET function returning fixture data."""
+    with open(fixture_path, "r") as f:
+        fixture_data = load(f)
+
+    def dummy_get_success(url, headers=None):
+        class DummyResponse:
+            status_code = 200
+
+            def json(self):
+                return fixture_data
+
+            def raise_for_status(self):
+                pass
+
+        return DummyResponse()
+
+    return dummy_get_success
+
+
 class TestMetadataFetcher403:
     def test_api_403_response(self, session, monkeypatch):
         monkeypatch.setattr(session, "get", dummy_get_403)
@@ -49,12 +69,14 @@ class TestMetadataFetcher403:
         expected = "OpenAire refresh token is invalid or expired. Please update token and try again."
         assert str(e.value) == expected
 
-    def test_openaire_v2(self, session):
+    def test_openaire_v2(self, session, monkeypatch):
+        fixture_path = os.path.join("tests", "fixtures", "openaire_v2.json")
+        monkeypatch.setattr(session, "get", make_dummy_get_success(fixture_path))
+
         fetcher = MetadataFetcher(session=session)
         actual = fetcher.get_metadata_from_openaire("10.5281/zenodo.4650794")
-        with open(
-            os.path.join("tests", "fixtures", "openaire_v2.json"), "r"
-        ) as f:
+
+        with open(fixture_path, "r") as f:
             expected = load(f)
         assert actual["results"] == expected["results"]
 
