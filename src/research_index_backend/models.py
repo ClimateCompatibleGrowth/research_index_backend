@@ -154,7 +154,7 @@ class AnonymousArticle(BaseModel):
     resource_type: Optional[str] = None
     openalex: Optional[str] = None
     cited_by_count: Optional[int] = None
-    cited_by_count_date: Optional[datetime] = None
+    cited_by_count_date: Optional[int] = None
     counts_by_year: Optional[dict] = None
 
 
