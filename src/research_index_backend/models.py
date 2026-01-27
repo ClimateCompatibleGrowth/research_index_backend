@@ -6,7 +6,6 @@ and edges, representing relationships between those entities.
 
 """
 
-from datetime import datetime
 from logging import DEBUG, basicConfig, getLogger
 from typing import Optional
 from uuid import UUID, uuid4
