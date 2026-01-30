@@ -6,7 +6,7 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
 2. Clone the repository `git clonehttps://github.com/ClimateCompatibleGrowth/research_index_backend.git`
 3. Change directory `cd research_index_backend`
 4. Install the package `pip install -e .` as an editable package (development install)
-5. Obtain an OpenAIRE Graph refresh token and create a .env file with the following parameters: 
+5. Obtain an OpenAIRE Graph refresh token and create a .env file with the following parameters:
    ```MG_HOST=
       MG_PORT=
       MG_PORT_ALT=
@@ -30,7 +30,7 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
 
         research_index --help
         usage: research_index [-h] [-i] [-l LIMIT] [-u] list_of_dois
-        
+
         positional arguments:
           list_of_dois          Path to CSV file containing list of DOIs
 
@@ -39,7 +39,7 @@ The package is not yet deployed to PyPI. Only an editable (development) install 
           -i, --initialise      Delete existing data and create new database
           -l, --limit N         Limit number of DOIs to process (default: 50)
           -u, --update-metadata Update metadata for existing DOIs
-          -w, --write-metadata  Save JSON responses to disk 
+          -w, --write-metadata  Save JSON responses to disk
 
         Examples:
           -> Process 10 DOIs from file:
