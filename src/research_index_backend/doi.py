@@ -14,10 +14,10 @@ from re import IGNORECASE, compile
 from typing import Dict, List
 
 from neo4j import Driver
-from neo4j.exceptions import (
-    ServiceUnavailable,
+from neo4j.exceptions import (  # https://neo4j.com/docs/api/python-driver/current/api.html#errors
     Neo4jError,
-)  # https://neo4j.com/docs/api/python-driver/current/api.html#errors
+    ServiceUnavailable,
+)
 from pydantic import BaseModel
 
 from .session import connect_to_db
@@ -89,7 +89,10 @@ class DOIManager:
     """
 
     def __init__(
-        self, list_of_dois: List[str], limit: int, update_metadata: bool = False
+        self,
+        list_of_dois: List[str],
+        limit: int,
+        update_metadata: bool = False,
     ) -> None:
 
         self._validate_inputs(list_of_dois, limit, update_metadata)
@@ -202,8 +205,12 @@ class DOIManager:
         processed_dois = (
             self.valid_pattern_dois if self.update_metadata else self.new_dois
         )
-        
-        duplicated_submissions = [doi for doi, count in Counter(self.list_of_dois).items() if count > 1]
+
+        duplicated_submissions = [
+            doi
+            for doi, count in Counter(self.list_of_dois).items()
+            if count > 1
+        ]
 
         metadata_pass = [
             doi

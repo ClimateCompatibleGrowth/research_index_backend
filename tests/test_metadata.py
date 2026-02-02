@@ -71,7 +71,9 @@ class TestMetadataFetcher403:
 
     def test_openaire_v2(self, session, monkeypatch):
         fixture_path = os.path.join("tests", "fixtures", "openaire_v2.json")
-        monkeypatch.setattr(session, "get", make_dummy_get_success(fixture_path))
+        monkeypatch.setattr(
+            session, "get", make_dummy_get_success(fixture_path)
+        )
 
         fetcher = MetadataFetcher(session=session)
         actual = fetcher.get_metadata_from_openaire("10.5281/zenodo.4650794")
