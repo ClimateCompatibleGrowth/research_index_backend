@@ -21,8 +21,8 @@ def parse_author(metadata: Dict) -> AnonymousAuthor | None:
         if pid and pid["id"]["scheme"] in ["orcid", "orcid_pending"]:
             orcid = pid["id"]["value"]
 
-    first_name = metadata.get("name", "").title()
-    last_name = metadata.get("surname", "").title()
+    first_name = (metadata.get("name") or "").title()
+    last_name = (metadata.get("surname") or "").title()
     if first_name in last_name:
         last_name = last_name.replace(first_name, "").strip()
     if last_name in first_name:
