@@ -11,13 +11,15 @@ import time
 from collections import Counter
 from logging import getLogger
 from re import IGNORECASE, compile
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 
 from neo4j import Driver
+
+# https://neo4j.com/docs/api/python-driver/current/api.html#errors
 from neo4j.exceptions import (
-    ServiceUnavailable,
     Neo4jError,
-)  # https://neo4j.com/docs/api/python-driver/current/api.html#errors
+    ServiceUnavailable,
+)
 from pydantic import BaseModel
 
 from .session import connect_to_db
@@ -38,16 +40,12 @@ class DOI(BaseModel):
     ingestion_success: bool = False
 
 
-class DOITracker(BaseModel):
-    doi_tracker: Dict[str, DOI]
-
-
 class DOIManager:
-    """Manages the validation and ingestion tracking of Digital Object Identifiers (DOIs).
+    """Tracks the validation and ingestion of Digital Object Identifiers (DOIs)
 
-    This class handles DOI validation, database existence checks, and metadata tracking.
-    It processes DOIs up to a specified limit and can optionally update metadata
-    for existing entries.
+    This class handles DOI validation, database existence checks, and metadata
+    tracking. It processes DOIs up to a specified limit and can optionally
+    update metadata for existing entries.
 
     Parameters
     ----------
@@ -89,7 +87,10 @@ class DOIManager:
     """
 
     def __init__(
-        self, list_of_dois: List[str], limit: int, update_metadata: bool = False
+        self,
+        list_of_dois: List[str],
+        limit: int,
+        update_metadata: bool = False,
     ) -> None:
 
         self._validate_inputs(list_of_dois, limit, update_metadata)
@@ -104,9 +105,10 @@ class DOIManager:
             limit if limit < len(self.list_of_dois) else len(self.list_of_dois)
         )
         self.update_metadata = update_metadata
-        self.doi_tracker: DOITracker = {
+        self.doi_tracker: Dict[str, DOI] = {
             doi: DOI(doi=doi) for doi in self.list_of_dois[: self.limit]
         }
+
         self.PATTERN = compile(DOI_PATTERN, IGNORECASE)
 
     def _validate_inputs(
@@ -184,26 +186,32 @@ class DOIManager:
         self.num_existing_dois = len(self.existing_dois)
 
         logger.info(
-            f"Found {self.num_existing_dois} existing and {self.num_new_dois} new DOIs"
+            f"Found {self.num_existing_dois} existing and "
+            + "{self.num_new_dois} new DOIs"
         )
 
-    def validate_dois(self) -> Dict[str, List[str]]:
+    @connect_to_db
+    def validate_dois(self, db: Driver) -> Dict[str, DOI]:
         try:
             self.pattern_check()
-            self.search_dois()
+            self.search_dois(db)
             return self.doi_tracker
         except Exception as e:
             logger.error(f"DOI validation failed: {e}")
             raise
 
-    def ingestion_metrics(self) -> Dict[str, int]:
+    def ingestion_metrics(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         total_time = self.end_time - self.start_time
 
         processed_dois = (
             self.valid_pattern_dois if self.update_metadata else self.new_dois
         )
-        
-        duplicated_submissions = [doi for doi, count in Counter(self.list_of_dois).items() if count > 1]
+
+        duplicated_submissions = [
+            doi
+            for doi, count in Counter(self.list_of_dois).items()
+            if count > 1
+        ]
 
         metadata_pass = [
             doi
