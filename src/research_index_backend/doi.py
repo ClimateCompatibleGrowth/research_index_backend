@@ -194,7 +194,7 @@ class DOIManager:
     def validate_dois(self, db: Driver) -> Dict[str, DOI]:
         try:
             self.pattern_check()
-            self.search_dois(db)
+            self.search_dois()
             return self.doi_tracker
         except Exception as e:
             logger.error(f"DOI validation failed: {e}")
