@@ -1,6 +1,7 @@
 """
 
-These tests call the OpenAire API and require a REFRESH_TOKEN to be defined in the environment variables.
+These tests call the OpenAire API and require a REFRESH_TOKEN to be
+defined in the environment variables.
 
 Obtain a refresh token from https://develop.openaire.eu/personal-token
 """
@@ -66,7 +67,10 @@ class TestMetadataFetcher403:
         monkeypatch.setattr(session, "get", dummy_get_403)
         with pytest.raises(ValueError) as e:
             MetadataFetcher(session=session).get_metadata_from_openaire("doi")
-        expected = "OpenAire refresh token is invalid or expired. Please update token and try again."
+        expected = (
+            "OpenAire refresh token is invalid or expired. "
+            + "Please update token and try again."
+        )
         assert str(e.value) == expected
 
     def test_openaire_v2(self, session, monkeypatch):
