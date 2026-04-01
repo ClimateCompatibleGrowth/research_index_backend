@@ -176,6 +176,36 @@ class TestResearchProduct:
         expected = (2021, 5, 13)
         assert actual == expected
 
+    def test_parse_metadata_null_publisher(self):
+        """publisher: null in OpenAire response should produce publisher=''"""
+        file_path = os.path.join(
+            "tests", "fixtures", "openaire_v2_simple.json"
+        )
+
+        with open(file_path, "r") as json_file:
+            json = load(json_file)
+            json["results"][0]["publisher"] = None
+
+            actual = parse_metadata(json, "10.5281/zenodo.4650794", {})
+
+            assert len(actual) == 1
+            assert actual[0].publisher == ""
+
+    def test_parse_metadata_null_authors(self):
+        """authors: null in OpenAire response should produce an empty authors list"""
+        file_path = os.path.join(
+            "tests", "fixtures", "openaire_v2_simple.json"
+        )
+
+        with open(file_path, "r") as json_file:
+            json = load(json_file)
+            json["results"][0]["authors"] = None
+
+            actual = parse_metadata(json, "10.5281/zenodo.4650794", {})
+
+            assert len(actual) == 1
+            assert actual[0].authors == []
+
     def test_parse_metadata_openaire_v2(self):
 
         file_path = os.path.join(
