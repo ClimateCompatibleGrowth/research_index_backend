@@ -112,7 +112,7 @@ def parse_metadata(
 
         title = clean_html(entity["mainTitle"])
 
-        publisher = entity.get("publisher", None)
+        publisher = entity.get("publisher") or ""
 
         journal_meta = entity.get("journal", "")
         if journal_meta:
@@ -137,7 +137,7 @@ def parse_metadata(
                 author = parse_author(x)
                 if author:
                     all_authors.append(author)
-        else:
+        elif authors is not None:
             author = parse_author(authors)
             if author:
                 all_authors.append(author)
